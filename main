@@ -1,0 +1,165 @@
+import streamlit as st
+import pandas as pd
+import plotly.graph_objects as go
+import plotly.express as px
+
+# Configuração da página (Tela Cheia)
+st.set_page_config(page_title="Dashboard INCT Wetscape", layout="wide")
+
+# --- ESTILIZAÇÃO CSS (Identidade LAGEAMB) ---
+st.markdown("""
+    <style>
+    .top-bar {
+        background-color: #386641;
+        padding: 15px;
+        border-radius: 5px;
+        color: white;
+        text-align: center;
+        font-weight: bold;
+        font-size: 22px;
+        margin-bottom: 25px;
+    }
+    .card {
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #eaeaea;
+        margin-bottom: 15px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+st.markdown('<div class="top-bar">INCT Wetscape - Sistema de Monitoramento de Dados por Unidade de Paisagem (PU)</div>', unsafe_allow_html=True)
+
+# --- 1. LEITURA E CONSOLIDAÇÃO DOS DADOS Separados por PU ---
+@st.cache_data
+def carregar_dados():
+    # Dicionário para armazenar os dados de cada PU
+    pus = ["PUAC", "PURJ", "PUTM", "PUEP"]
+    dados_por_pu = {}
+    totais_consolidados = []
+
+    for pu in pus:
+        try:
+            # No GitHub, ele lerá os arquivos locais do repositório (ex: dados_puac.csv)
+            df_pu = pd.read_csv(f"dados_{pu.lower()}.csv")
+        except FileNotFoundError:
+            # Caso os arquivos ainda não existam no repositório, gera dados vazios/fictícios temporários
+            df_pu = pd.DataFrame({
+                'importados_repositorio': [1000 if pu=="PUAC" else 500],
+                'metadados_preenchidos': [800 if pu=="PUAC" else 400],
+                'padronizados_dwc': [600 if pu=="PUAC" else 200],
+                'inserido_banco_dados': [400 if pu=="PUAC" else 0]
+            })
+        
+        dados_por_pu[pu] = df_pu
+        
+        # Soma os totais daquela planilha para compor a Síntese Geral
+        totais_consolidados.append({
+            'PU': pu,
+            'Importados (Repositório)': df_pu['importados_repositorio'].sum(),
+            'Metadados Preenchidos': df_pu['metadados_preenchidos'].sum(),
+            'Padronizados (DwC)': df_pu['padronizados_dwc'].sum(),
+            'No Banco de Dados': df_pu['inserido_banco_dados'].sum()
+        })
+        
+    df_geral = pd.DataFrame(totais_consolidados)
+    return dados_por_pu, df_geral
+
+dict_pus, df_geral = carregar_dados()
+
+# --- 2. CRIAÇÃO DAS ABAS DO PAINEL ---
+abas = st.tabs(["🗺️ Mapa Interativo", "📊 Síntese Geral", "📍 PUAC", "📍 PURJ", "📍 PUTM", "📍 PUEP"])
+
+# ================= ABA 1: MAPA (qgis2web) =================
+with abas[0]:
+    st.subheader("Mapa de Delimitação das Unidades de Paisagem")
+    st.write("Utilize as ferramentas do mapa para buscar e ampliar a visualização em cada PU.")
+    
+    # Substitua pelo endereço do seu index.html exportado pelo qgis2web
+    url_mapa_qgis2web = "https://tedinfo.teste.ufpr.br/dashboard/mapa" 
+    st.components.v1.iframe(url_mapa_qgis2web, height=600, scrolling=True)
+
+# ================= ABA 2: SÍNTESE GERAL =================
+with abas[1]:
+    st.subheader("Panorama Geral do Repositório do INCT")
+    
+    # Totais absolutos somando todas as planilhas
+    tot_imp = df_geral['Importados (Repositório)'].sum()
+    tot_met = df_geral['Metadados Preenchidos'].sum()
+    tot_padr = df_geral['Padronizados (DwC)'].sum()
+    tot_bd = df_geral['No Banco de Dados'].sum()
+    
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Total Importado", f"{tot_imp:,}".replace(",", "."))
+    c2.metric("Com Metadados", f"{tot_met:,}".replace(",", "."))
+    c3.metric("Padronizados (DwC)", f"{tot_padr:,}".replace(",", "."))
+    c4.metric("No Banco de Dados", f"{tot_bd:,}".replace(",", "."))
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    fig_geral = px.bar(df_geral, x='PU', y=['Importados (Repositório)', 'Metadados Preenchidos', 'Padronizados (DwC)', 'No Banco de Dados'],
+                       barmode='group', title="Comparativo do Fluxo de Processamento entre PUs",
+                       color_discrete_sequence=['#2b9348', '#55a630', '#80b918', '#aacc00'])
+    fig_geral.update_layout(xaxis_title="Unidade de Paisagem", yaxis_title="Quantidade de Registros", legend_title="Etapas")
+    st.plotly_chart(fig_geral, use_container_width=True)
+
+# ================= FUNÇÃO PARA GERAR O CONTEÚDO INDIVIDUAL DAS ABAS DE PU =================
+def gerar_conteudo_pu(nome_pu, df_especifico):
+    # Calcula as somas apenas para os dados desta PU
+    imp = df_especifico['importados_repositorio'].sum()
+    met = df_especifico['metadados_preenchidos'].sum()
+    padr = df_especifico['padronizados_dwc'].sum()
+    bd = df_especifico['inserido_banco_dados'].sum()
+    
+    st.subheader(f"Monitoramento de Dados - {nome_pu}")
+    
+    # Cards locais
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Importados", f"{imp:,}".replace(",", "."))
+    m2.metric("Metadados OK", f"{met:,}".replace(",", "."))
+    m3.metric("Padronizados DwC", f"{padr:,}".replace(",", "."))
+    m4.metric("No Banco", f"{bd:,}".replace(",", "."))
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    col_grafico, col_lista = st.columns([2, 1])
+    
+    with col_grafico:
+        # Gráfico horizontal do fluxo de processamento interno daquela PU
+        etapas = ['Importados', 'Metadados OK', 'Padronizados', 'No Banco']
+        valores = [imp, met, padr, bd]
+        
+        fig_pu = go.Figure(go.Bar(
+            x=valores,
+            y=etapas,
+            orientation='h',
+            marker_color=['#1a4301', '#245501', '#52796f', '#84a59d'],
+            text=[f" {v:,}".replace(",", ".") for v in valores],
+            textposition='auto'
+        ))
+        fig_pu.update_layout(title=f"Avanço Histórico do Processamento ({nome_pu})", xaxis_title="Número de Registros", height=320)
+        st.plotly_chart(fig_pu, use_container_width=True)
+        
+    with col_lista:
+        st.markdown(f'<div class="card"><h4>📁 Detalhamento de Datasets ({nome_pu})</h4>', unsafe_allow_html=True)
+        # Mostra a tabela de conjuntos que compõem os gráficos para conferência rápida
+        if 'conjunto_dados' in df_especifico.columns:
+            st.dataframe(df_especifico[['conjunto_dados', 'importados_repositorio']], hide_index=True, use_container_width=True)
+        else:
+            st.write("Nenhum dataset detalhado inserido na planilha.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# Vinculando a função dinâmica do Streamlit para cada aba puxando o seu respectivo DataFrame
+with abas[2]:
+    gerar_conteudo_pu("PUAC", dict_pus["PUAC"])
+with abas[3]:
+    gerar_conteudo_pu("PURJ", dict_pus["PURJ"])
+with abas[4]:
+    gerar_conteudo_pu("PUTM", dict_pus["PUTM"])
+with abas[5]:
+    gerar_conteudo_pu("PUEP", dict_pus["PUEP"])
+
+# Rodapé
+st.markdown("<hr><p style='text-align:center; color:gray; font-size:12px;'>LAGEAMB / UFPR - INCT Wetscape 2026</p>", unsafe_allow_html=True)
