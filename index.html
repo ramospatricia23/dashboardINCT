@@ -7,176 +7,244 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Importando uma alternativa geométrica elegante caso queira carregar online, 
-           mas já definindo Chillax como prioridade total no sistema */
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+        /* Importando a fonte Chillax */
+        @import url('https://api.fontshare.com/v2/css?f[]=chillax@500,600,700&display=swap');
 
-        /* Configuração do Fundo Geral (#FFEBD4) e Tipografia Chillax */
         body { 
             background-color: #FFEBD4; 
-            font-family: 'Chillax', 'Plus Jakarta Sans', sans-serif; 
-            color: #024B30;
+            font-family: 'Chillax', sans-serif; 
         }
-
-        /* Cabeçalho Customizado com o Banner do INCT Wetscape (#024B30) */
+        
+        /* Cabeçalho personalizado com a Logo integrada */
         .top-bar { 
             background-color: #024B30; 
-            background-image: url('banner.png'); /* Puxa a logo e linhas da image_88121b.png */
-            background-size: cover;
-            background-position: center;
             color: white; 
-            height: 120px; /* Altura ideal para exibir bem o banner horizontal */
+            padding: 12px 30px; 
             display: flex;
             align-items: center;
-            justify-content: center;
-            text-shadow: 0px 2px 4px rgba(0,0,0,0.6); /* Destaca o texto sobre o banner */
-            font-weight: 700; 
-            font-size: 24px; 
-            border-bottom: 4px solid #FFCD61;
+            justify-content: space-between;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .top-bar img {
+            height: 50px; /* Altura ideal para não distorcer o cabeçalho */
+            width: auto;
         }
 
-        /* Customização das Abas de Navegação */
+        .top-bar-title {
+            font-weight: 700; 
+            font-size: 22px; 
+            flex-grow: 1;
+            text-align: center;
+            margin-right: 50px; /* Balanceia o espaço por causa da logo na esquerda */
+        }
+
+        /* Estilização das Abas */
         .nav-tabs {
             border-bottom: 2px solid #024B30;
         }
+
         .nav-tabs .nav-link { 
             color: #024B30; 
             font-weight: 600; 
             border: 1px solid transparent;
-            margin-right: 5px;
+            margin-bottom: -2px;
             transition: all 0.2s ease;
         }
-        /* Quando passa o mouse por cima das abas */
+        
         .nav-tabs .nav-link:hover {
-            background-color: rgba(255, 205, 97, 0.3);
+            background-color: rgba(2, 75, 48, 0.05);
             color: #024B30;
         }
-        /* Quando a aba está ativa / clicada (#FFCD61 com texto no verde institucional) */
+
+        /* Cor quando a aba estiver selecionada/clicada */
         .nav-tabs .nav-link.active { 
             background-color: #FFCD61 !important; 
             color: #024B30 !important; 
-            border-color: #024B30 #024B30 transparent !important;
-            box-shadow: 0px -2px 5px rgba(0,0,0,0.05);
+            border-color: #024B30 #024B30 transparent #024B30 !important;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
         }
-
-        /* Customização dos Cards de Gráficos e Conteúdo */
+        
+        /* Customização dos Cards de Gráficos */
         .card { 
-            background: #ffffff; 
-            padding: 25px; 
+            background: white; 
+            padding: 20px; 
             border-radius: 12px; 
-            box-shadow: 0 4px 12px rgba(2, 75, 48, 0.05); /* Sombra suave esverdeada */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03); 
             margin-bottom: 20px; 
             border: 1px solid rgba(2, 75, 48, 0.1); 
         }
-        h5 {
-            font-weight: 700;
-            color: #024B30;
-            margin-bottom: 20px;
+        
+        .card h5 { 
+            font-size: 16px; 
+            font-weight: 700; 
+            color: #024B30; 
+            margin-bottom: 15px; 
+            padding-bottom: 8px; 
+            border-bottom: 1px solid #eee; 
         }
-
+        
         iframe { width: 100%; height: 600px; border: none; border-radius: 8px; }
+        
+        .mini-card { 
+            background: #fffbf7; 
+            border-left: 4px solid #024B30; 
+            padding: 12px; 
+            border-radius: 4px; 
+            margin-bottom: 10px; 
+            border: 1px solid #f0e6dc;
+        }
+        .mini-card-title { font-size: 11px; color: #666; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+        .mini-card-value { font-size: 22px; font-weight: 700; color: #024B30; }
     </style>
 </head>
 <body>
 
-    <!-- O cabeçalho agora carrega dinamicamente a imagem do seu repositório -->
-    <div class="top-bar">Sistema de Monitoramento de Dados por Unidade de Paisagem (PU)</div>
+    <div class="top-bar">
+        <img src="logoBranca.png" alt="Logo INCT Wetscape">
+        <div class="top-bar-title">INCT Wetscape - Sistema de Monitoramento de Dados por Paisagem Úmida (PU)</div>
+    </div>
 
     <div class="container-fluid mt-4">
         <ul class="nav nav-tabs mb-4" id="painelTabs" role="tablist">
             <li class="nav-item"><button class="nav-link active" id="mapa-tab" data-bs-toggle="tab" data-bs-target="#mapa" type="button" role="tab">🗺️ Mapa Interativo</button></li>
-            <li class="nav-item"><button class="nav-link" id="puac-tab" data-bs-toggle="tab" data-bs-target="#puac" type="button" role="tab">📍 PUAC</button></li>
-            <li class="nav-item"><button class="nav-link" id="purj-tab" data-bs-toggle="tab" data-bs-target="#purj" type="button" role="tab">📍 PURJ</button></li>
-            <li class="nav-item"><button class="nav-link" id="putm-tab" data-bs-toggle="tab" data-bs-target="#putm" type="button" role="tab">📍 PUTM</button></li>
-            <li class="nav-item"><button class="nav-link" id="puep-tab" data-bs-toggle="tab" data-bs-target="#puep" type="button" role="tab">📍 PUEP</button></li>
+            <li class="nav-item"><button class="nav-link" id="pupa-tab" data-bs-toggle="tab" data-bs-target="#pupa" type="button" role="tab" onclick="renderizarPainel('pupa')">📍 PUPA</button></li>
+            <li class="nav-item"><button class="nav-link" id="puac-tab" data-bs-toggle="tab" data-bs-target="#puac" type="button" role="tab" onclick="renderizarPainel('puac')">📍 PUAC</button></li>
+            <li class="nav-item"><button class="nav-link" id="punb-tab" data-bs-toggle="tab" data-bs-target="#punb" type="button" role="tab" onclick="renderizarPainel('punb')">📍 PUNB</button></li>
+            <li class="nav-item"><button class="nav-link" id="putm-tab" data-bs-toggle="tab" data-bs-target="#putm" type="button" role="tab" onclick="renderizarPainel('putm')">📍 PUTM</button></li>
+            <li class="nav-item"><button class="nav-link" id="puep-tab" data-bs-toggle="tab" data-bs-target="#puep" type="button" role="tab" onclick="renderizarPainel('puep')">📍 PUEP</button></li>
+            <li class="nav-item"><button class="nav-link" id="purj-tab" data-bs-toggle="tab" data-bs-target="#purj" type="button" role="tab" onclick="renderizarPainel('purj')">📍 PURJ</button></li>
         </ul>
 
         <div class="tab-content" id="conteudoPainel">
             <div class="tab-pane fade show active" id="mapa" role="tabpanel">
                 <div class="card">
-                    <h5>Mapa de Delimitação das Unidades de Paisagem</h5>
+                    <h5>Mapa de Delimitação das Paisagens Úmidas</h5>
                     <iframe src="mapa/index.html"></iframe>
                 </div>
             </div>
 
-            <div class="tab-pane fade" id="puac" role="tabpanel">
-                <div class="row">
-                    <div class="col-md-9"><div class="card"><h5>Fluxo de Governança de Datasets (PUAC)</h5><canvas id="chartPUAC"></canvas></div></div>
-                    <div class="col-md-3"><div class="card"><h5>📌 Status PUAC</h5><p>Dados de teste carregados localmente com a nova identidade visual.</p></div></div>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="purj" role="tabpanel">
-                <div class="row">
-                    <div class="col-md-9"><div class="card"><h5>Fluxo de Governança de Datasets (PURJ)</h5><canvas id="chartPURJ"></canvas></div></div>
-                    <div class="col-md-3"><div class="card"><h5>📌 Status PURJ</h5><p>Dados de teste carregados localmente com a nova identidade visual.</p></div></div>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="putm" role="tabpanel">
-                <div class="row">
-                    <div class="col-md-9"><div class="card"><h5>Fluxo de Governança de Datasets (PUTM)</h5><canvas id="chartPUTM"></canvas></div></div>
-                    <div class="col-md-3"><div class="card"><h5>📌 Status PUTM</h5><p>Dados de teste carregados localmente com a nova identidade visual.</p></div></div>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="puep" role="tabpanel">
-                <div class="row">
-                    <div class="col-md-9"><div class="card"><h5>Fluxo de Governança de Datasets (PUEP)</h5><canvas id="chartPUEP"></canvas></div></div>
-                    <div class="col-md-3"><div class="card"><h5>📌 Status PUEP</h5><p>Dados de teste carregados localmente com a nova identidade visual.</p></div></div>
-                </div>
-            </div>
+            <div class="tab-pane fade" id="pupa" role="tabpanel"><div id="container-pupa"></div></div>
+            <div class="tab-pane fade" id="puac" role="tabpanel"><div id="container-puac"></div></div>
+            <div class="tab-pane fade" id="punb" role="tabpanel"><div id="container-punb"></div></div>
+            <div class="tab-pane fade" id="putm" role="tabpanel"><div id="container-putm"></div></div>
+            <div class="tab-pane fade" id="puep" role="tabpanel"><div id="container-puep"></div></div>
+            <div class="tab-pane fade" id="purj" role="tabpanel"><div id="container-purj"></div></div>
         </div>
     </div>
 
-    <hr style="border-color: #024B30;"><p class="text-center text-muted small pb-4">LAGEAMB / UFPR - INCT Wetscape 2026</p>
+    <hr><p class="text-center text-muted small" style="font-weight: 500;">LAGEAMB / UFPR - INCT Wetscape 2026</p>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Aplicando a fonte global também nos textos internos dos gráficos do Chart.js
-        Chart.defaults.font.family = "'Chillax', 'Plus Jakarta Sans', sans-serif";
-        Chart.defaults.font.color = "#024B30";
+        // BANCO DE DADOS LOCAL - VALORES DE EXEMPLO (Pode alterar aqui quando quiser)
+        const dadosPUs = {
+            pupa: { brutos: 5, em_padronizacao: 3, padronizados: 2, metadados: 2, geo_total: 10, geo_com_meta: 4, sigilo_sim: 4, sigilo_nao: 2, sigilo_total: 6 },
+            puac: { brutos: 14, em_padronizacao: 8, padronizados: 6, metadados: 5, geo_total: 22, geo_com_meta: 12, sigilo_sim: 10, sigilo_nao: 2, sigilo_total: 12 },
+            punb: { brutos: 8, em_padronizacao: 4, padronizados: 3, metadados: 3, geo_total: 15, geo_com_meta: 7, sigilo_sim: 6, sigilo_nao: 4, sigilo_total: 10 },
+            putm: { brutos: 12, em_padronizacao: 9, padronizados: 5, metadados: 4, geo_total: 30, geo_com_meta: 18, sigilo_sim: 15, sigilo_nao: 0, sigilo_total: 15 },
+            puep: { brutos: 20, em_padronizacao: 11, padronizados: 9, metadados: 9, geo_total: 45, geo_com_meta: 32, sigilo_sim: 18, sigilo_nao: 1, sigilo_total: 19 },
+            purj: { brutos: 7, em_padronizacao: 3, padronizados: 2, metadados: 1, geo_total: 11, geo_com_meta: 3, sigilo_sim: 5, sigilo_nao: 3, sigilo_total: 8 }
+        };
 
-        function criarGrafico(canvasId, dados) {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: [
-                        'Datasets brutos', 
-                        'Datasets em processamento',
-                        'Datasets padronizados (nomenclatura e DC)', 
-                        'Metadados dos datasets', 
-                        'Dados geoespaciais', 
-                        'Metadados dos dados geoespaciais', 
-                        'Preenchimento do termo de sigilo', 
-                        'Datasets em plataformas externas'
-                    ],
-                    datasets: [{
-                        label: 'Quantidade',
-                        data: dados,
-                        /* Degradê harmônico usando tons da paleta esverdeada institucional */
-                        backgroundColor: ['#023e26', '#024B30', '#0f6344', '#1d7c59', '#329671', '#4cb18b', '#6bcba6', '#8ee6c3'],
-                        borderWidth: 0
-                    }]
-                },
-                options: { 
-                    indexAxis: 'y', 
-                    responsive: true, 
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { color: 'rgba(2, 75, 48, 0.05)' }, ticks: { color: '#024B30' } },
-                        y: { grid: { display: false }, ticks: { color: '#024B30', font: { weight: '600' } } }
-                    }
-                }
-            });
+        // Configuração padrão global para os gráficos usarem a fonte Chillax
+        Chart.defaults.font.family = "'Chillax', sans-serif";
+        Chart.defaults.color = '#024B30';
+
+        function renderizarPainel(puKey) {
+            const container = document.getElementById(`container-${puKey}`);
+            if (!container) return;
+            
+            if (container.innerHTML === "") {
+                const dados = dadosPUs[puKey];
+                const porcSigilo = dados.sigilo_total > 0 ? Math.round((dados.sigilo_sim / dados.sigilo_total) * 100) : 0;
+
+                container.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-9">
+                            <div class="card">
+                                <h5>1. Ciclo de Vida e Governança de Datasets (Tabelas SiBBr)</h5>
+                                <div style="height: 280px;"><canvas id="chartGov-${puKey}"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card" style="height: calc(100% - 20px);">
+                                <h5>Resumo de Balanço</h5>
+                                <div class="mini-card"><div class="mini-card-title">Total Brutos</div><div class="mini-card-value" style="color: #ae2012;">${dados.brutos}</div></div>
+                                <div class="mini-card"><div class="mini-card-title">Total Padronizados</div><div class="mini-card-value">${dados.padronizados}</div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <h5>2. Auditoria de Dados Geoespaciais</h5>
+                                <div style="height: 250px;"><canvas id="chartGeo-${puKey}"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <h5>3. Adesão aos Termos de Sigilo e Confidencialidade</h5>
+                                <div class="row">
+                                    <div class="col-md-7" style="height: 250px;">
+                                        <canvas id="chartSigilo-${puKey}"></canvas>
+                                    </div>
+                                    <div class="col-md-5 d-flex flex-column justify-content-center">
+                                        <div class="mini-card"><div class="mini-card-title">Integrantes</div><div class="mini-card-value">${dados.sigilo_total}</div></div>
+                                        <div class="mini-card"><div class="mini-card-title">Índice de Assinatura</div><div class="mini-card-value" style="color: #2a9d8f;">${porcSigilo}%</div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                setTimeout(() => {
+                    // Gráfico 1: Governança
+                    new Chart(document.getElementById(`chartGov-${puKey}`).getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: ['Datasets Brutos', 'Em Fase de Padronização', 'Datasets Padronizados', 'Metadados Concluídos'],
+                            datasets: [{
+                                data: [dados.brutos, dados.em_padronizacao, dados.padronizados, dados.metadados],
+                                backgroundColor: ['#ae2012', '#ca6702', '#0a9396', '#024B30'],
+                                borderRadius: 4
+                            }]
+                        },
+                        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                    });
+
+                    // Gráfico 2: Geoespacial
+                    new Chart(document.getElementById(`chartGeo-${puKey}`).getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: ['Total Geo', 'Com Metadados'],
+                            datasets: [{
+                                data: [dados.geo_total, dados.geo_com_meta],
+                                backgroundColor: ['#024B30', '#FFCD61'],
+                                barThickness: 40,
+                                borderRadius: 4
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                    });
+
+                    // Gráfico 3: Sigilo
+                    new Chart(document.getElementById(`chartSigilo-${puKey}`).getContext('2d'), {
+                        type: 'pie',
+                        data: {
+                            labels: ['Assinados (Sim)', 'Não Assinados (Não)'],
+                            datasets: [{
+                                data: [dados.sigilo_sim, dados.sigilo_nao],
+                                backgroundColor: ['#024B30', '#e76f51']
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                    });
+                }, 50);
+            }
         }
-
-        // Números base de teste [Brutos, Em Processamento, Padronizados, Metadados, Geo, MetaGeo, Sigilo, Externas]
-        criarGrafico('chartPUAC', [10, 8, 5, 5, 4, 3, 5, 2]);
-        criarGrafico('chartPURJ', [12, 9, 6, 4, 2, 1, 6, 0]);
-        criarGrafico('chartPUTM', [7, 5, 3, 2, 3, 2, 3, 1]);
-        criarGrafico('chartPUEP', [15, 11, 7, 6, 8, 5, 10, 4]);
     </script>
 </body>
 </html>
