@@ -653,10 +653,10 @@
         });
         var overlaysTree = [
             {label: 'Instituições<br /><table><tr><td style="text-align: center;"><img src="legend/Instituies_3_CEMUFPR0.png" /></td><td>CEM - UFPR</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_CentroUniveristárioValedoIpojucaUNIFAVIP1.png" /></td><td>Centro Univeristário Vale do Ipojuca, UNIFAVIP</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_EmpresaBrasileiradePesquisaAgropecuáriaEMBRAPAPantanal2.png" /></td><td>Empresa Brasileira de Pesquisa Agropecuária (EMBRAPA) - Pantanal</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_InstitutodeDesenvolvimentoSustentávelMamirauáIDSM3.png" /></td><td>Instituto de Desenvolvimento Sustentável Mamirauá (IDSM)</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_InstitutodePesquisasEcológicasIPÊ4.png" /></td><td>Instituto de Pesquisas Ecológicas (IPÊ)</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_InstitutoMaxPlanckdeBiogeoquímicaMPIBGC5.png" /></td><td>Instituto Max Planck de Biogeoquímica (MPI-BGC)</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_InstitutoNacionaldePesquisadoPantanalINPPMCTI6.png" /></td><td>Instituto Nacional de Pesquisa do Pantanal  (INPP/MCTI)</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_InstitutoNacionaldePesquisasdaAmazôniaINPA7.png" /></td><td>Instituto Nacional de Pesquisas da Amazônia (INPA)</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_KarlsruheInstituteforTechnologyKIT8.png" /></td><td>Karlsruhe Institute for Technology (KIT)</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_LAGEAMB9.png" /></td><td>LAGEAMB</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_MarBrasil10.png" /></td><td>MarBrasil</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_MovimentodePescadoresArtesanaisdoParanáMOPEAR11.png" /></td><td>Movimento de Pescadores Artesanais do Paraná (MOPEAR)</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_UniversidadedeBrasíliaUnB12.png" /></td><td>Universidade de Brasília (UnB)</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_UniversidadedeCuiabá13.png" /></td><td>Universidade de Cuiabá</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_UniversidadedeLeedsReinoUnido14.png" /></td><td>Universidade de Leeds, Reino Unido</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_UniversidadedeSãoPauloUSP15.png" /></td><td>Universidade de São Paulo (USP)</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_UniversidadedoEstadodeMatoGrossoUNEMAT16.png" /></td><td>Universidade do Estado de Mato Grosso (UNEMAT)</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_UniversidadeFederaldeMatoGrossoUFMT17.png" /></td><td>Universidade Federal de Mato Grosso (UFMT)</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_UniversidadeFederaldeMatoGrossodoSulUFMS18.png" /></td><td>Universidade Federal de Mato Grosso do Sul (UFMS)</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_UniversidadeFederaldoAmazonasUFAM19.png" /></td><td>Universidade Federal do Amazonas (UFAM)</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_UniversidadeFederaldoParanáUFPRDeArtes20.png" /></td><td>Universidade Federal do Paraná (UFPR) - DeArtes</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_UniversidadeFederaldoRiodeJaneiroUFRJ21.png" /></td><td>Universidade Federal do Rio de Janeiro (UFRJ)</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_UniversidadeFederaldoRioGrandeFURG22.png" /></td><td>Universidade Federal do Rio Grande (FURG)</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_UniversityofBritishColumbia23.png" /></td><td>University of British Columbia</td></tr><tr><td style="text-align: center;"><img src="legend/Instituies_3_24.png" /></td><td></td></tr></table>', layer: layer_Instituies_3},
-        {label: '<b>PUEP</b>',  selectAllCheckbox: true, children: [
-            {label: '<img src="legend/readeestudoPUEP_2.png" /> Área de estudo - PUEP', layer: layer_readeestudoPUEP_2},]},
-            {label: "Google Labels", layer: layer_GoogleLabels_1},
-            {label: "Google Satellite", layer: layer_GoogleSatellite_0},]
+            {label: '<b>PUEP</b>',  selectAllCheckbox: true, children: [
+                {label: '<img src="legend/readeestudoPUEP_2.png" /> Área de estudo - PUEP', layer: layer_readeestudoPUEP_2},]},
+                {label: "Google Labels", layer: layer_GoogleLabels_1},
+                {label: "Google Satellite", layer: layer_GoogleSatellite_0},]
         var lay = L.control.layers.tree(null, overlaysTree,{
             //namedToggle: true,
             //selectorBack: false,
@@ -738,6 +738,37 @@
         map.on("layerremove", function(){
             resetLabels([layer_Instituies_3]);
         });
+
+        // =========================================================================
+        // CARREGAMENTO DO LIMITE: LML_LimitesPeaLei2006_PUAraguaia.geojson
+        // =========================================================================
+        fetch('LML_LimitesPeaLei2006_PUAraguaia.geojson')
+            .then(response => {
+                if (!response.ok) throw new Error("Arquivo geojson não encontrado.");
+                return response.json();
+            })
+            .then(data => {
+                map.createPane('pane_limite_araguaia');
+                map.getPane('pane_limite_araguaia').style.zIndex = 404;
+
+                var camadaAraguaia = L.geoJSON(data, {
+                    pane: 'pane_limite_araguaia',
+                    style: function (feature) {
+                        return {
+                            color: '#024B30',      // Verde oficial da identidade do projeto
+                            weight: 3.5,           // Espessura do traçado
+                            opacity: 0.9,          // Opacidade do traçado externo
+                            fillColor: '#FFCD61',  // Amarelo suave de fundo
+                            fillOpacity: 0.12      // Transparência interna para enxergar o satélite
+                        };
+                    }
+                }).addTo(map);
+
+                camadaAraguaia.bindPopup("<b>Limites Pea Lei 2006 - PU Araguaia</b><br>Núcleo de Gestão de Dados (NGD) - INCT Wetscape");
+                console.log("Limite do Araguaia carregado com sucesso!");
+            })
+            .catch(error => console.warn("Erro ao carregar limite do Araguaia:", error));
+
         </script>        
     </body>
 </html>
