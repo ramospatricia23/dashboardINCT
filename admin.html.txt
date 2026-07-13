@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Dados - INCT Wetscape</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Importando a mesma identidade visual do seu Dashboard */
+        @import url('https://api.fontshare.com/v2/css?f[]=chillax@500,600,700&display=swap');
+
+        body { 
+            background-color: #FFEBD4;  
+            font-family: 'Chillax', sans-serif; 
+        }
+        
+        .top-bar { 
+            background-color: #024B30; 
+            color: white; 
+            padding: 15px 30px; 
+            font-weight: 700; 
+            font-size: 20px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .card-form { 
+            background: white; 
+            border-radius: 12px; 
+            padding: 30px; 
+            border: 1px solid rgba(2, 75, 48, 0.1); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03); 
+        }
+
+        .btn-salvar { 
+            background-color: #FFCD61; 
+            color: #024B30; 
+            font-weight: 600; 
+            border: 1px solid #024B30; 
+            transition: all 0.2s ease; 
+        }
+
+        .btn-salvar:hover:not(:disabled) { 
+            background-color: #024B30; 
+            color: white; 
+        }
+
+        .form-label { 
+            font-weight: 600; 
+            color: #024B30; 
+            font-size: 14px; 
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #024B30;
+            box-shadow: 0 0 0 0.25px rgba(2, 75, 48, 0.25);
+        }
+
+        /* Status visual de carregamento */
+        .status-loading {
+            font-size: 13px;
+            color: #ca6702;
+            font-weight: 600;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <span>🌱 Painel de Atualização de Indicadores - NGD</span>
+        <span style="font-size: 12px; font-weight: 500; opacity: 0.8;">Área do Ponto Focal</span>
+    </div>
+
+    <div class="container mt-5 mb-5" style="max-width: 750px;">
+        <div class="card-form">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 style="color: #024B30; font-weight: 700; margin: 0;">Sincronizar Paisagem Úmida (PU)</h4>
+                <div id="statusCarga" class="status-loading">🔄 Buscando dados atuais no Drive...</div>
+            </div>
+            
+            <form id="formAtualizar">
+                <!-- Escolha da PU -->
+                <div class="mb-4">
+                    <label class="form-label">Selecione qual Paisagem Úmida deseja atualizar</label>
+                    <select class="form-select form-select-lg" id="selectPU" required style="border-color: #024B30; font-weight: 600;">
+                        <option value="" disabled selected>Escolha a PU...</option>
+                        <option value="pupa">PUPA</option>
+                        <option value="puac">PUAC</option>
+                        <option value="punb">PUNB</option>
+                        <option value="putm">PUTM</option>
+                        <option value="puep">PUEP</option>
+                        <option value="purj">PURJ</option>
+                        <option value="puar">PUAR</option>
+                    </select>
+                </div>
+
+                <!-- O formulário inicia desabilitado até que uma PU seja selecionada para carregar os dados -->
+                <fieldset id="camposFormulario" disabled>
+                    
+                    <hr class="my-4" style="color: #024B30;">
+
+                    <!-- Bloco de Biodiversidade -->
+                    <h5 class="mb-3" style="color: #ca6702; font-weight: 600;">Dados de Biodiversidade</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-md-3">
+                            <label class="form-label">Brutos</label>
+                            <input type="number" class="form-control" id="brutos" min="0" value="0" required>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label">Em Padronização</label>
+                            <input type="number" class="form-control" id="em_padronizacao" min="0" value="0" required>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label">Padronizados</label>
+                            <input type="number" class="form-control" id="padronizados" min="0" value="0" required>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label">Metadados Concluídos</label>
+                            <input type="number" class="form-control" id="metadados" min="0" value="0" required>
+                        </div>
+                    </div>
+
+                    <!-- Bloco Geoespacial -->
+                    <h5 class="mb-3" style="color: #0a9396; font-weight: 600;">Dados Geoespaciais</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <label class="form-label">Total de Dados Geoespaciais</label>
+                            <input type="number" class="form-control" id="geo_total" min="0" value="0" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Com Metadados</label>
+                            <input type="number" class="form-control" id="geo_com_meta" min="0" value="0" required>
+                        </div>
+                    </div>
+
+                    <!-- Bloco Sigilo -->
+                    <h5 class="mb-3" style="color: #024B30; font-weight: 600;">Termos de Sigilo e Confidencialidade</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-md-4">
+                            <label class="form-label">Assinados (Sim)</label>
+                            <input type="number" class="form-control" id="sigilo_sim" min="0" value="0" required>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label class="form-label">Não Assinados (Não)</label>
+                            <input type="number" class="form-control" id="sigilo_nao" min="0" value="0" required>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label">Total de Integrantes</label>
+                            <input type="number" class="form-control" id="sigilo_total" value="0" readonly style="background-color: #f4f4f4; font-weight: 700; color: #024B30;">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-salvar btn-lg w-100 mt-3" id="btnSalvar">
+                        Salvar Alterações na Nuvem
+                    </button>
+                </fieldset>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // URL da API do Google Apps Script integrada com sucesso!
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzlB8nWutX2R5i7lE9R_qfcPny-7wATqe1CO3YscII97GPH7LeMF2QAmXzytxZA_uw/exec";
+
+        // Variável local para guardar a última foto dos dados vindos do Drive
+        let dadosGlobaisPUs = {};
+
+        const selectPU = document.getElementById('selectPU');
+        const camposFormulario = document.getElementById('camposFormulario');
+        const statusCarga = document.getElementById('statusCarga');
+        
+        const inputSim = document.getElementById('sigilo_sim');
+        const inputNao = document.getElementById('sigilo_nao');
+        const inputTotal = document.getElementById('sigilo_total');
+
+        // Calcula a soma de integrantes automaticamente
+        function calcularTotalIntegrantes() {
+            inputTotal.value = Number(inputSim.value) + Number(inputNao.value);
+        }
+        inputSim.addEventListener('input', calcularTotalIntegrantes);
+        inputNao.addEventListener('input', calcularTotalIntegrantes);
+
+        // Dispara ao mudar a seleção da PU: busca e puxa os dados do banco para a tela
+        selectPU.addEventListener('change', async () => {
+            const puSelecionada = selectPU.value;
+            if (!puSelecionada) return;
+
+            camposFormulario.disabled = true;
+            statusCarga.style.display = 'block';
+            statusCarga.innerText = "🔄 Buscando dados atuais no Drive...";
+
+            try {
+                // Executa uma consulta na nossa API do Google Sheets
+                const resposta = await fetch(WEB_APP_URL);
+                dadosGlobaisPUs = await resposta.json();
+                
+                const dadosPU = dadosGlobaisPUs[puSelecionada];
+                
+                if (dadosPU) {
+                    // Preenche os inputs com o que já existe na planilha atualmente
+                    document.getElementById('brutos').value = dadosPU.brutos;
+                    document.getElementById('em_padronizacao').value = dadosPU.em_padronizacao;
+                    document.getElementById('padronizados').value = dadosPU.padronizados;
+                    document.getElementById('metadados').value = dadosPU.metadados;
+                    document.getElementById('geo_total').value = dadosPU.geo_total;
+                    document.getElementById('geo_com_meta').value = dadosPU.geo_com_meta;
+                    inputSim.value = dadosPU.sigilo_sim;
+                    inputNao.value = dadosPU.sigilo_nao;
+                    inputTotal.value = dadosPU.sigilo_total;
+                    
+                    // Libera os campos para edição
+                    camposFormulario.disabled = false;
+                    statusCarga.innerText = "✅ Dados carregados!";
+                }
+            } catch (erro) {
+                console.error(erro);
+                statusCarga.innerText = "❌ Erro ao conectar ao Drive.";
+                alert('Não foi possível carregar os dados atuais da planilha. Verifique se a implantação do Apps Script possui as permissões corretas para "Qualquer pessoa".');
+            } finally {
+                setTimeout(() => { statusCarga.style.display = 'none'; }, 2000);
+            }
+        });
+
+        // Envio das atualizações via POST
+        document.getElementById('formAtualizar').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            camposFormulario.disabled = true;
+            statusCarga.style.display = 'block';
+            statusCarga.innerText = "💾 Gravando na planilha...";
+
+            const pu = selectPU.value;
+            const pacoteDados = {
+                puKey: pu,
+                dados: {
+                    brutos: Number(document.getElementById('brutos').value),
+                    em_padronizacao: Number(document.getElementById('em_padronizacao').value),
+                    padronizados: Number(document.getElementById('padronizados').value),
+                    metadados: Number(document.getElementById('metadados').value),
+                    geo_total: Number(document.getElementById('geo_total').value),
+                    geo_com_meta: Number(document.getElementById('geo_com_meta').value),
+                    sigilo_sim: Number(inputSim.value),
+                    sigilo_nao: Number(inputNao.value),
+                    sigilo_total: Number(inputTotal.value)
+                }
+            };
+
+            try {
+                const resposta = await fetch(WEB_APP_URL, {
+                    redirect: "follow",
+                    method: 'POST',
+                    body: JSON.stringify(pacoteDados)
+                });
+                
+                const resultado = await resposta.json();
+                if (resultado.status === "sucesso") {
+                    statusCarga.innerText = "🚀 Planilha Atualizada!";
+                    alert('Os dados da ' + pu.toUpperCase() + ' foram sincronizados com sucesso e já estão refletidos no Dashboard!');
+                    
+                    // Reseta o estado do formulário para nova seleção
+                    document.getElementById('formAtualizar').reset();
+                    camposFormulario.disabled = true;
+                } else {
+                    alert('Erro no servidor Google: ' + resultado.mensagem);
+                    camposFormulario.disabled = false;
+                }
+            } catch (erro) {
+                console.error(erro);
+                alert('Erro crítico ao tentar salvar as informações.');
+                camposFormulario.disabled = false;
+            } finally {
+                setTimeout(() => { statusCarga.style.display = 'none'; }, 2000);
+            }
+        });
+    </script>
+</body>
+</html>
