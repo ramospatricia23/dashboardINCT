@@ -139,26 +139,57 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // BANQUINHO MANUAL LOCAL - ATENÇÃO PATI E NATHAN, ALTERE A LINHA DA PU CONFORME A PLANILHA DOS PONTOS FOCAIS
-        const dadosPUs = {
-            pupa: { brutos: 0, em_padronizacao: 0, padronizados: 0, metadados: 0, geo_total: 0, geo_com_meta: 0, sigilo_sim: 11, sigilo_nao: 10, sigilo_total: 21 },
-            puac: { brutos: 0, em_padronizacao: 0, padronizados: 0, metadados: 0, geo_total: 0, geo_com_meta: 0, sigilo_sim: 5, sigilo_nao: 2, sigilo_total: 7 },
-            punb: { brutos: 0, em_padronizacao: 0, padronizados: 0, metadados: 0, geo_total: 0, geo_com_meta: 0, sigilo_sim: 23, sigilo_nao: 1, sigilo_total: 24 },
-            putm: { brutos: 0, em_padronizacao: 0, padronizados: 0, metadados: 0, geo_total: 0, geo_com_meta: 0, sigilo_sim: 14, sigilo_nao: 2, sigilo_total: 16 },
-            puep: { brutos: 24, em_padronizacao: 24, padronizados: 0, metadados: 0, geo_total: 107, geo_com_meta: 107, sigilo_sim: 11, sigilo_nao: 4, sigilo_total: 15 },
-            purj: { brutos: 0, em_padronizacao: 0, padronizados: 0, metadados: 0, geo_total: 0, geo_com_meta: 0, sigilo_sim: 8, sigilo_nao: 7, sigilo_total: 15 },
-            puar: { brutos: 0, em_padronizacao: 0, padronizados: 0, metadados: 0, geo_total: 0, geo_com_meta: 0, sigilo_sim: 4, sigilo_nao: 1, sigilo_total: 5 }
-        };
+        // O banco de dados agora inicia vazio e é alimentado de forma dinâmica via API do Drive
+        let dadosPUs = null;
+
+        // URL da API do Google Apps Script integrada com sucesso!
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzlB8nWutX2R5i7lE9R_qfcPny-7wATqe1CO3YscII97GPH7LeMF2QAmXzytxZA_uw/exec";
 
         // Configuração padrão global para os gráficos usarem a fonte Chillax
         Chart.defaults.font.family = "'Chillax', sans-serif";
         Chart.defaults.color = '#024B30';
 
+        // Busca as atualizações na planilha assim que o painel é aberto
+        async function inicializarDashboard() {
+            try {
+                const resposta = await fetch(WEB_APP_URL);
+                dadosPUs = await resposta.json();
+                console.log("Banco de dados sincronizado com o Google Drive carregado com sucesso!");
+            } catch (erro) {
+                console.error("Erro ao conectar ao Google Drive. Aplicando dados de backup:", erro);
+                // Dados estáticos de contingência caso ocorra falha de rede
+                dadosPUs = {
+                    pupa: { brutos: 0, em_padronizacao: 0, padronizados: 0, metadados: 0, geo_total: 0, geo_com_meta: 0, sigilo_sim: 11, sigilo_nao: 10, sigilo_total: 21 },
+                    puac: { brutos: 0, em_padronizacao: 0, padronizados: 0, metadados: 0, geo_total: 0, geo_com_meta: 0, sigilo_sim: 5, sigilo_nao: 2, sigilo_total: 7 },
+                    punb: { brutos: 0, em_padronizacao: 0, padronizados: 0, metadados: 0, geo_total: 0, geo_com_meta: 0, sigilo_sim: 23, sigilo_nao: 1, sigilo_total: 24 },
+                    putm: { brutos: 0, em_padronizacao: 0, padronizados: 0, metadados: 0, geo_total: 0, geo_com_meta: 0, sigilo_sim: 14, sigilo_nao: 2, sigilo_total: 16 },
+                    puep: { brutos: 24, em_padronizacao: 24, padronizados: 0, metadados: 0, geo_total: 107, geo_com_meta: 107, sigilo_sim: 11, sigilo_nao: 4, sigilo_total: 15 },
+                    purj: { brutos: 0, em_padronizacao: 0, padronizados: 0, metadados: 0, geo_total: 0, geo_com_meta: 0, sigilo_sim: 8, sigilo_nao: 7, sigilo_total: 15 },
+                    puar: { brutos: 0, em_padronizacao: 0, padronizados: 0, metadados: 0, geo_total: 0, geo_com_meta: 0, sigilo_sim: 4, sigilo_nao: 1, sigilo_total: 5 }
+                };
+            }
+        }
+
+        // Executa a carga de rede inicial
+        inicializarDashboard();
+
         function renderizarPainel(puKey) {
             const container = document.getElementById(`container-${puKey}`);
             if (!container) return;
             
-            if (container.innerHTML === "") {
+            // Caso o usuário clique em uma aba antes da resposta da API chegar por completo
+            if (!dadosPUs) {
+                container.innerHTML = `
+                    <div class="d-flex flex-column align-items-center justify-content-center p-5">
+                        <div class="spinner-border text-success mb-3" role="status"></div>
+                        <div class="text-muted" style="font-weight: 500;">Sincronizando dados com a planilha dos pontos focais...</div>
+                    </div>`;
+                // Tenta renderizar novamente em frações de segundo
+                setTimeout(() => renderizarPainel(puKey), 300);
+                return;
+            }
+            
+            if (container.innerHTML === "" || container.innerHTML.includes("Sincronizando")) {
                 const dados = dadosPUs[puKey];
                 const porcSigilo = dados.sigilo_total > 0 ? Math.round((dados.sigilo_sim / dados.sigilo_total) * 100) : 0;
 
