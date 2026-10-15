@@ -96,7 +96,7 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
-        /* ===== Painel de Camadas ===== */
+        /* ===== Painel de Camadas Persistente ===== */
         .painel-camadas {
             display: none !important;
             position: absolute !important;
@@ -115,6 +115,7 @@
             padding: 10px 14px !important;
             max-height: 80vh;
             overflow-y: auto;
+            z-index: 1000 !important;
         }
 
         .painel-camadas.aberto {
@@ -152,7 +153,6 @@
             margin-bottom: 3px;
         }
 
-        /* Força a imagem de legenda a ficar visível e alinhada com o texto */
         .leaflet-control-layers-tree label img,
         .painel-camadas label img {
             width: 14px !important;
@@ -183,9 +183,9 @@
             padding-right: 8px;
         }
 
-        /* Estilo do Rótulo das Instituições com ocultação automática por padrão */
+        /* ===== Rótulos controlados estritamente pela classe do mapa ===== */
         .rotulo-instituicao {
-            display: none; /* Controlado via classe do mapa */
+            display: none;
             background: rgba(255, 251, 247, 0.95);
             border: 1px solid #024B30;
             border-radius: 4px;
@@ -199,7 +199,6 @@
             white-space: nowrap;
         }
 
-        /* Só exibe o rótulo quando o container do mapa tiver a classe 'exibir-rotulos' */
         .exibir-rotulos .rotulo-instituicao {
             display: block !important;
         }
@@ -224,7 +223,7 @@
         <script src="js/leaflet.photon.js"></script>
         <script src="js/leaflet-measure.js"></script>
 
-        <!-- Dados vetoriais gerados pelo QGIS -->
+        <!-- Arquivos da pasta data/ gerados pelo QGIS -->
         <script src="data/FlonaAmazonasPUAC_2.js"></script>
         <script src="data/BaciasHidrogrficas_3.js"></script>
         <script src="data/PontosdemonitoramentoPUNB_4.js"></script>
@@ -265,7 +264,6 @@
             return tempDiv.innerHTML;
         }
 
-        // Controles de interface
         L.control.zoom({ position: 'topright' }).addTo(map);
 
         L.control.locate({
@@ -327,7 +325,7 @@
         map.addLayer(layer_OSMStandard_2);
         </script>
 
-        <!-- Suporte a WMS INDE -->
+        <!-- Suporte INDE -->
         <script src="js/wms_inde.js"></script>
 
         <script>
@@ -515,7 +513,7 @@
         bounds_group.addLayer(layer_SESCPantanal_14);
         map.addLayer(layer_SESCPantanal_14);
 
-        /* ===== Instituições (Rótulo controlado rigorosamente pela classe .exibir-rotulos) ===== */
+        /* ===== Instituições Polos INCT Wetscape ===== */
         function pop_LML_instituicoesINCTWetscape(feature, layer) {
             var popupContent = '<div style="font-size: 13px; font-weight: 700; color: #024B30; padding: 4px;">' + (feature.properties['Name'] || 'Instituição') + '</div>';
             layer.bindPopup(popupContent);
@@ -565,7 +563,7 @@
         bounds_group.addLayer(layer_LML_instituicoesINCTWetscapelml_instituicoesinctwetscape_15);
         map.addLayer(layer_LML_instituicoesINCTWetscapelml_instituicoesinctwetscape_15);
 
-        // Árvore com links diretos aos arquivos PNG da pasta legend/
+        // Estrutura da árvore de camadas
         var overlaysTree = [
             {
                 label: '<b>Instituições</b>',
@@ -621,33 +619,69 @@
         });
         lay.addTo(map);
 
+        /* ===== Gerenciamento Robusto do Painel e Persistência ===== */
         var painelCamadas = lay.getContainer();
         painelCamadas.classList.add('painel-camadas');
 
+        L.DomEvent.disableClickPropagation(painelCamadas);
+        L.DomEvent.disableScrollPropagation(painelCamadas);
+
+        var botaoCamadasLink = null;
+        var painelEstaAberto = false;
+
+        function alternarPainelCamadas(forcarEstado) {
+            if (typeof forcarEstado === 'boolean') {
+                painelEstaAberto = forcarEstado;
+            } else {
+                painelEstaAberto = !painelEstaAberto;
+            }
+            painelCamadas.classList.toggle('aberto', painelEstaAberto);
+            if (botaoCamadasLink) {
+                botaoCamadasLink.classList.toggle('ativo', painelEstaAberto);
+            }
+        }
+
+        function montarCabecalhoPainel() {
+            if (!painelCamadas.querySelector('.painel-camadas-topo')) {
+                var topoPainel = document.createElement('div');
+                topoPainel.className = 'painel-camadas-topo';
+                topoPainel.innerHTML = '<span>Camadas</span>';
+                var botaoFechar = document.createElement('button');
+                botaoFechar.type = 'button';
+                botaoFechar.title = 'Fechar';
+                botaoFechar.innerHTML = '&times;';
+                botaoFechar.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    alternarPainelCamadas(false);
+                });
+                topoPainel.appendChild(botaoFechar);
+                painelCamadas.insertBefore(topoPainel, painelCamadas.firstChild);
+            }
+        }
+
+        montarCabecalhoPainel();
+
+        // Evita que o wms_inde.js feche o painel ao redesenhar a árvore
         var _setOverlayTreeOriginal = lay.setOverlayTree.bind(lay);
         lay.setOverlayTree = function (arvore) {
             var rolagem = painelCamadas.scrollTop;
             var resultado = _setOverlayTreeOriginal(arvore);
+
+            painelCamadas = lay.getContainer();
+            painelCamadas.classList.add('painel-camadas');
+            L.DomEvent.disableClickPropagation(painelCamadas);
+            L.DomEvent.disableScrollPropagation(painelCamadas);
+
+            montarCabecalhoPainel();
+
+            if (painelEstaAberto) {
+                painelCamadas.classList.add('aberto');
+                if (botaoCamadasLink) botaoCamadasLink.classList.add('ativo');
+            }
             painelCamadas.scrollTop = rolagem;
+
             return resultado;
         };
-
-        var botaoCamadasLink = null;
-        function alternarPainelCamadas(abrir) {
-            var aberto = painelCamadas.classList.toggle('aberto', abrir);
-            if (botaoCamadasLink) botaoCamadasLink.classList.toggle('ativo', aberto);
-        }
-
-        var topoPainel = document.createElement('div');
-        topoPainel.className = 'painel-camadas-topo';
-        topoPainel.innerHTML = '<span>Camadas</span>';
-        var botaoFechar = document.createElement('button');
-        botaoFechar.type = 'button';
-        botaoFechar.title = 'Fechar';
-        botaoFechar.innerHTML = '&times;';
-        botaoFechar.addEventListener('click', function () { alternarPainelCamadas(false); });
-        topoPainel.appendChild(botaoFechar);
-        painelCamadas.insertBefore(topoPainel, painelCamadas.firstChild);
 
         var BotaoCamadas = L.Control.extend({
             options: { position: 'topright' },
@@ -672,7 +706,6 @@
         /* Gestão da escala dos rótulos por classe CSS no mapa */
         function verificarEscalaRotulos() {
             var mapaEl = document.getElementById('map');
-            // Apenas exibe rótulos a partir do zoom 6 (quando o usuário aproxima o mapa)
             if (map.getZoom() >= 6) {
                 mapaEl.classList.add('exibir-rotulos');
             } else {
