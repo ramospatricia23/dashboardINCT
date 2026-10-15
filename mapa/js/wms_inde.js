@@ -55,7 +55,7 @@ function escHtml(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-var wmsAtivas = {};   // chave url|camada -> L.tileLayer.wms adicionada ao mapa
+var wmsAtivas = {};   // chave url|camada -> {layer, url, nome, titulo} das camadas WMS ligadas
 
 function filhosLayer(el) {
     return Array.prototype.filter.call(el.children, function (c) { return c.localName === 'Layer'; });
@@ -99,8 +99,8 @@ function injetarEstiloINDE() {
     document.head.appendChild(st);
 }
 
-function montarPainelINDE() {
-    var painel = document.querySelector('#map .leaflet-control-layers');
+function montarPainelINDE(container) {
+    var painel = container || document.querySelector('#map .leaflet-control-layers');
     if (!painel || painel.querySelector('.inde-bloco')) return;
     injetarEstiloINDE();
 
@@ -119,8 +119,7 @@ function montarPainelINDE() {
         '<input type="text" class="inde-filtro" placeholder="Filtrar camadas" style="display:none;margin-top:6px">' +
         '<div class="inde-lista" style="display:none"></div>';
 
-    var topo = painel.querySelector('.painel-camadas-topo');
-    painel.insertBefore(bloco, topo ? topo.nextSibling : painel.firstChild);
+    painel.appendChild(bloco);
 
     var sel = bloco.querySelector('.inde-sel');
     var inUrl = bloco.querySelector('.inde-url');
@@ -178,10 +177,10 @@ function montarPainelINDE() {
                 pane: 'pane_wms', layers: c.nome, format: 'image/png',
                 transparent: true, version: '1.3.0', opacity: 0.85, attribution: 'INDE'
             });
-            wmsAtivas[chave] = l;
+            wmsAtivas[chave] = { layer: l, url: urlAtual, nome: c.nome, titulo: c.titulo };
             l.addTo(map);
         } else if (wmsAtivas[chave]) {
-            map.removeLayer(wmsAtivas[chave]);
+            map.removeLayer(wmsAtivas[chave].layer);
             delete wmsAtivas[chave];
         }
     }
