@@ -96,11 +96,95 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
             pointer-events: none;
         }
+
+        /* Painel WMS INDE */
+        #painel-wms {
+            position: absolute;
+            top: 15px;
+            right: 65px;
+            z-index: 1000;
+            width: 300px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(2, 75, 48, 0.2);
+            border-radius: 8px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+            font-family: 'Chillax', sans-serif;
+            color: #024B30;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .painel-wms-header {
+            background: #024B30;
+            color: #FFFFFF;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .painel-wms-body {
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .painel-wms-select {
+            width: 100%;
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(2, 75, 48, 0.3);
+            font-family: 'Chillax', sans-serif;
+            font-size: 11px;
+            color: #024B30;
+            background: #FFFFFF;
+            outline: none;
+        }
+
+        #lista-camadas-wms {
+            max-height: 160px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        #lista-camadas-wms label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
         </style>
         <title>Mapa Interativo INCT Wetscape</title>
     </head>
     <body>
         <div id="map"></div>
+
+        <!-- Painel WMS Institucional -->
+        <div id="painel-wms">
+            <div class="painel-wms-header">
+                <span>Catálogo WMS (INDE)</span>
+                <span id="toggle-painel-wms" style="cursor: pointer; font-size: 14px;">&minus;</span>
+            </div>
+            <div class="painel-wms-body" id="corpo-painel-wms">
+                <select id="select-orgao-wms" class="painel-wms-select">
+                    <option value="">-- Selecione uma instituição --</option>
+                    <option value="FUNAI">FUNAI - Terras Indígenas</option>
+                    <option value="IBAMA">IBAMA - Gestão Ambiental</option>
+                    <option value="ICMBIO">ICMBio - Áreas Protegidas</option>
+                </select>
+                <div id="lista-camadas-wms"></div>
+            </div>
+        </div>
 
         <script src="js/qgis2web_expressions.js"></script>
         <script src="js/leaflet.js"></script>
@@ -141,30 +225,16 @@
         map.attributionControl.setPrefix('<a href="https://github.com/qgis2web/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com">Leaflet</a> &middot; INCT Wetscape');
         var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
 
-        function removeEmptyRowsFromPopupContent(content, feature) {
-            var tempDiv = document.createElement('div');
-            tempDiv.innerHTML = content;
-            var rows = tempDiv.querySelectorAll('tr');
-            for (var i = 0; i < rows.length; i++) {
-                var td = rows[i].querySelector('td.visible-with-data');
-                var key = td ? td.id : '';
-                if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
-                    rows[i].parentNode.removeChild(rows[i]);
+        function popupGenerico(feature, layer) {
+            if (feature.properties) {
+                var conteudo = '<table style="font-size:12px; line-height:1.4;">';
+                for (var chave in feature.properties) {
+                    if (feature.properties[chave] !== null && feature.properties[chave] !== undefined && feature.properties[chave] !== '') {
+                        conteudo += '<tr><th style="text-align:left; padding-right:8px; color:#024B30;">' + chave + ':</th><td>' + feature.properties[chave] + '</td></tr>';
+                    }
                 }
-            }
-            return tempDiv.innerHTML;
-        }
-
-        function addClassToPopupIfMedia(content, popup) {
-            var tempDiv = document.createElement('div');
-            tempDiv.innerHTML = content;
-            var imgTd = tempDiv.querySelector('td img');
-            if (imgTd) {
-                var src = imgTd.getAttribute('src');
-                if (/\.(jpg|jpeg|png|gif|bmp|webp|avif)$/i.test(src)) {
-                    popup._contentNode.classList.add('media');
-                    setTimeout(function() { popup.update(); }, 10);
-                }
+                conteudo += '</table>';
+                layer.bindPopup(conteudo, { maxHeight: 350 });
             }
         }
 
@@ -275,6 +345,7 @@
         map.getPane('pane_readeinflunciaPUEP_6').style.zIndex = 406;
         var layer_readeinflunciaPUEP_6 = new L.geoJson(json_readeinflunciaPUEP_6, {
             pane: 'pane_readeinflunciaPUEP_6',
+            onEachFeature: popupGenerico,
             style: { opacity: 1, color: 'rgba(60,136,57,1.0)', weight: 3.0, fillOpacity: 0.08 }
         });
         bounds_group.addLayer(layer_readeinflunciaPUEP_6);
@@ -284,6 +355,7 @@
         map.getPane('pane_readeestudoPUEP_7').style.zIndex = 407;
         var layer_readeestudoPUEP_7 = new L.geoJson(json_readeestudoPUEP_7, {
             pane: 'pane_readeestudoPUEP_7',
+            onEachFeature: popupGenerico,
             style: { opacity: 1, color: 'rgba(53,226,177,1.0)', weight: 3.0, fillOpacity: 0.1 }
         });
         bounds_group.addLayer(layer_readeestudoPUEP_7);
@@ -293,6 +365,7 @@
         map.getPane('pane_ParcelasREBIMAR_8').style.zIndex = 408;
         var layer_ParcelasREBIMAR_8 = new L.geoJson(json_ParcelasREBIMAR_8, {
             pane: 'pane_ParcelasREBIMAR_8',
+            onEachFeature: popupGenerico,
             style: { opacity: 1, color: 'rgba(255,205,97,1.0)', weight: 4.0, fillOpacity: 0.2 }
         });
         bounds_group.addLayer(layer_ParcelasREBIMAR_8);
@@ -302,6 +375,7 @@
         map.getPane('pane_LML_LimitesPeaLei2006_PUAraguaia_9').style.zIndex = 409;
         var layer_LML_LimitesPeaLei2006_PUAraguaia_9 = new L.geoJson(json_LML_LimitesPeaLei2006_PUAraguaia_9, {
             pane: 'pane_LML_LimitesPeaLei2006_PUAraguaia_9',
+            onEachFeature: popupGenerico,
             style: { opacity: 1, color: 'rgba(53,226,177,1.0)', weight: 3.0, fillOpacity: 0.1 }
         });
         bounds_group.addLayer(layer_LML_LimitesPeaLei2006_PUAraguaia_9);
@@ -311,6 +385,7 @@
         map.getPane('pane_readeestudoPURJ_10').style.zIndex = 410;
         var layer_readeestudoPURJ_10 = new L.geoJson(json_readeestudoPURJ_10, {
             pane: 'pane_readeestudoPURJ_10',
+            onEachFeature: popupGenerico,
             style: { opacity: 1, color: 'rgba(53,226,177,1.0)', weight: 3.0, fillOpacity: 0.1 }
         });
         bounds_group.addLayer(layer_readeestudoPURJ_10);
@@ -320,6 +395,7 @@
         map.getPane('pane_PontosamostraisPURJ_11').style.zIndex = 411;
         var layer_PontosamostraisPURJ_11 = new L.geoJson(json_PontosamostraisPURJ_11, {
             pane: 'pane_PontosamostraisPURJ_11',
+            onEachFeature: popupGenerico,
             pointToLayer: function (feature, latlng) {
                 return L.circleMarker(latlng, { radius: 4.5, color: '#024B30', weight: 1.5, fill: true, fillOpacity: 1, fillColor: '#FFCD61' });
             }
@@ -331,6 +407,7 @@
         map.getPane('pane_LML_ESECTAIM_12').style.zIndex = 412;
         var layer_LML_ESECTAIM_12 = new L.geoJson(json_LML_ESECTAIM_12, {
             pane: 'pane_LML_ESECTAIM_12',
+            onEachFeature: popupGenerico,
             style: { opacity: 1, color: 'rgba(53,226,177,1.0)', weight: 3.0, fillOpacity: 0.1 }
         });
         bounds_group.addLayer(layer_LML_ESECTAIM_12);
@@ -340,6 +417,7 @@
         map.getPane('pane_ParnadoPantanalMatogrossense_13').style.zIndex = 413;
         var layer_ParnadoPantanalMatogrossense_13 = new L.geoJson(json_ParnadoPantanalMatogrossense_13, {
             pane: 'pane_ParnadoPantanalMatogrossense_13',
+            onEachFeature: popupGenerico,
             style: { opacity: 1, color: 'rgba(53,226,177,1.0)', weight: 3.0, fillOpacity: 0.1 }
         });
         bounds_group.addLayer(layer_ParnadoPantanalMatogrossense_13);
@@ -442,6 +520,86 @@
         });
 
         setTimeout(atualizarVisibilidadeRotulos, 100);
+
+        /* Lógica do Catálogo WMS */
+        var catalogoWMS = {
+            FUNAI: {
+                url: 'https://geoserver.funai.gov.br/geoserver/wms',
+                camadas: [
+                    { id: 'funai:tis_poligonais', nome: 'Terras Indígenas (Polígonos)' },
+                    { id: 'funai:tis_estudo', nome: 'Terras Indígenas em Estudo' }
+                ]
+            },
+            IBAMA: {
+                url: 'https://pamgia.ibama.gov.br/server/services/SISCOM/publico/MapServer/WMSServer',
+                camadas: [
+                    { id: '0', nome: 'Autos de Infração' },
+                    { id: '1', nome: 'Áreas Embargadas' },
+                    { id: '2', nome: 'Termos de Apreensão' }
+                ]
+            },
+            ICMBIO: {
+                url: 'https://geoservicos.icmbio.gov.br/geoserver/wms',
+                camadas: [
+                    { id: 'limite_uc_federais', nome: 'UCs Federais' },
+                    { id: 'zonas_amortecimento', nome: 'Zonas de Amortecimento' }
+                ]
+            }
+        };
+
+        var camadasAtivasWMS = {};
+
+        document.getElementById('select-orgao-wms').addEventListener('change', function(e) {
+            var orgao = e.target.value;
+            var container = document.getElementById('lista-camadas-wms');
+            container.innerHTML = '';
+
+            if (!orgao || !catalogoWMS[orgao]) return;
+
+            var config = catalogoWMS[orgao];
+
+            config.camadas.forEach(function(item) {
+                var label = document.createElement('label');
+                var checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = !!camadasAtivasWMS[item.id];
+
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        var layer = L.tileLayer.wms(config.url, {
+                            layers: item.id,
+                            format: 'image/png',
+                            transparent: true,
+                            attribution: orgao
+                        }).addTo(map);
+
+                        camadasAtivasWMS[item.id] = layer;
+                    } else {
+                        if (camadasAtivasWMS[item.id]) {
+                            map.removeLayer(camadasAtivasWMS[item.id]);
+                            delete camadasAtivasWMS[item.id];
+                        }
+                    }
+                });
+
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(item.nome));
+                container.appendChild(label);
+            });
+        });
+
+        // Minimizar / Expandir o painel WMS
+        var toggleBtn = document.getElementById('toggle-painel-wms');
+        var corpoPainel = document.getElementById('corpo-painel-wms');
+        toggleBtn.addEventListener('click', function() {
+            if (corpoPainel.style.display === 'none') {
+                corpoPainel.style.display = 'flex';
+                toggleBtn.innerHTML = '&minus;';
+            } else {
+                corpoPainel.style.display = 'none';
+                toggleBtn.innerHTML = '&#43;';
+            }
+        });
         </script>        
     </body>
 </html>
