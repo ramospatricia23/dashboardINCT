@@ -175,10 +175,10 @@
             </div>
             <div class="painel-wms-body" id="corpo-painel-wms">
                 <select id="select-orgao-wms" class="painel-wms-select">
-                    <option value="">-- Seleccione uma instituição --</option>
-                    <option value="MMA_ICMBIO">ICMBio / MMA - Unidades de Conservação</option>
-                    <option value="IBAMA">IBAMA - Fiscalização e Embargos</option>
+                    <option value="">-- Selecione uma instituição --</option>
+                    <option value="IBAMA">IBAMA - SISCOM / PAMGIA</option>
                     <option value="FUNAI">FUNAI - Terras Indígenas</option>
+                    <option value="ICMBIO">ICMBio - Áreas Protegidas</option>
                 </select>
                 <div id="lista-camadas-wms"></div>
             </div>
@@ -519,25 +519,27 @@
 
         setTimeout(atualizarVisibilidadeRotulos, 100);
 
+        /* Catálogo WMS Oficial */
         var catalogoWMS = {
-            MMA_ICMBIO: {
-                url: 'https://geoservicos.ibama.gov.br/geoserver/wms',
-                camadas: [
-                    { id: 'publica:limite_uc_federal_2022', nome: 'UCs Federais (Oficial)' }
-                ]
-            },
             IBAMA: {
-                url: 'https://siscom.ibama.gov.br/geoserver/wms',
+                url: 'https://pamgia.ibama.gov.br/server/services/SISCOM/publico/MapServer/WMSServer',
                 camadas: [
-                    { id: 'ibama:embargos_a', nome: 'Áreas Embargadas' },
-                    { id: 'ibama:autos_de_infracao_p', nome: 'Autos de Infração' }
+                    { id: 'ibama_embargos_a', nome: 'Áreas Embargadas' },
+                    { id: 'ibama_autos_de_infracao_p', nome: 'Autos de Infração' },
+                    { id: 'ibama_desembargos_a', nome: 'Desembargos' }
                 ]
             },
             FUNAI: {
-                url: 'https://geoserver.funai.gov.br/geoserver/wms',
+                url: 'https://geoserver.funai.gov.br/geoserver/ows',
                 camadas: [
-                    { id: 'funai:tis_poligonais', nome: 'Terras Indígenas (Polígonos)' },
-                    { id: 'funai:tis_estudo', nome: 'Terras Indígenas em Estudo' }
+                    { id: 'Funai:tis_poligonais', nome: 'Terras Indígenas (Polígonos)' },
+                    { id: 'Funai:tis_estudo', nome: 'Terras Indígenas em Estudo' }
+                ]
+            },
+            ICMBIO: {
+                url: 'https://geoservicos.ibama.gov.br/geoserver/wms',
+                camadas: [
+                    { id: 'publica:limite_uc_federal_2022', nome: 'Unidades de Conservação Federais' }
                 ]
             }
         };
@@ -565,14 +567,11 @@
                             layers: item.id,
                             format: 'image/png',
                             transparent: true,
-                            version: '1.1.1',
-                            srs: 'EPSG:4326',
-                            uppercase: true,
                             attribution: orgao
                         });
 
-                        layer.on('tileerror', function(error) {
-                            console.warn('Falha no carregamento do WMS do ' + orgao + '. Verifique se o servidor do órgão está ativo e aceita conexões HTTPS do GitHub Pages:', error);
+                        layer.on('tileerror', function(err) {
+                            console.error('[WMS ERROR] Falha no tile da camada ' + item.id + ' (' + orgao + '):', err);
                         });
 
                         layer.addTo(map);
