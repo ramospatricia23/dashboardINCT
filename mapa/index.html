@@ -97,18 +97,17 @@
             pointer-events: none;
         }
 
-        /* Painel WMS INDE */
         #painel-wms {
             position: absolute;
             top: 15px;
             right: 65px;
             z-index: 1000;
-            width: 300px;
-            background: rgba(255, 255, 255, 0.95);
+            width: 310px;
+            background: rgba(255, 255, 255, 0.96);
             backdrop-filter: blur(4px);
-            border: 1px solid rgba(2, 75, 48, 0.2);
+            border: 1px solid rgba(2, 75, 48, 0.25);
             border-radius: 8px;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
             font-family: 'Chillax', sans-serif;
             color: #024B30;
             display: flex;
@@ -119,7 +118,7 @@
         .painel-wms-header {
             background: #024B30;
             color: #FFFFFF;
-            padding: 8px 12px;
+            padding: 9px 12px;
             font-size: 12px;
             font-weight: 700;
             display: flex;
@@ -128,15 +127,15 @@
         }
 
         .painel-wms-body {
-            padding: 10px 12px;
+            padding: 12px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 9px;
         }
 
         .painel-wms-select {
             width: 100%;
-            padding: 6px;
+            padding: 7px;
             border-radius: 4px;
             border: 1px solid rgba(2, 75, 48, 0.3);
             font-family: 'Chillax', sans-serif;
@@ -147,11 +146,11 @@
         }
 
         #lista-camadas-wms {
-            max-height: 160px;
+            max-height: 180px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 7px;
             font-size: 11px;
             font-weight: 500;
             margin-top: 4px;
@@ -160,7 +159,7 @@
         #lista-camadas-wms label {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             cursor: pointer;
         }
         </style>
@@ -169,7 +168,6 @@
     <body>
         <div id="map"></div>
 
-        <!-- Painel WMS Institucional -->
         <div id="painel-wms">
             <div class="painel-wms-header">
                 <span>Catálogo WMS (INDE)</span>
@@ -177,10 +175,10 @@
             </div>
             <div class="painel-wms-body" id="corpo-painel-wms">
                 <select id="select-orgao-wms" class="painel-wms-select">
-                    <option value="">-- Selecione uma instituição --</option>
+                    <option value="">-- Seleccione uma instituição --</option>
+                    <option value="MMA_ICMBIO">ICMBio / MMA - Unidades de Conservação</option>
+                    <option value="IBAMA">IBAMA - Fiscalização e Embargos</option>
                     <option value="FUNAI">FUNAI - Terras Indígenas</option>
-                    <option value="IBAMA">IBAMA - Gestão Ambiental</option>
-                    <option value="ICMBIO">ICMBio - Áreas Protegidas</option>
                 </select>
                 <div id="lista-camadas-wms"></div>
             </div>
@@ -521,28 +519,25 @@
 
         setTimeout(atualizarVisibilidadeRotulos, 100);
 
-        /* Lógica do Catálogo WMS */
         var catalogoWMS = {
+            MMA_ICMBIO: {
+                url: 'https://geoservicos.ibama.gov.br/geoserver/wms',
+                camadas: [
+                    { id: 'publica:limite_uc_federal_2022', nome: 'UCs Federais (Oficial)' }
+                ]
+            },
+            IBAMA: {
+                url: 'https://siscom.ibama.gov.br/geoserver/wms',
+                camadas: [
+                    { id: 'ibama:embargos_a', nome: 'Áreas Embargadas' },
+                    { id: 'ibama:autos_de_infracao_p', nome: 'Autos de Infração' }
+                ]
+            },
             FUNAI: {
                 url: 'https://geoserver.funai.gov.br/geoserver/wms',
                 camadas: [
                     { id: 'funai:tis_poligonais', nome: 'Terras Indígenas (Polígonos)' },
                     { id: 'funai:tis_estudo', nome: 'Terras Indígenas em Estudo' }
-                ]
-            },
-            IBAMA: {
-                url: 'https://pamgia.ibama.gov.br/server/services/SISCOM/publico/MapServer/WMSServer',
-                camadas: [
-                    { id: '0', nome: 'Autos de Infração' },
-                    { id: '1', nome: 'Áreas Embargadas' },
-                    { id: '2', nome: 'Termos de Apreensão' }
-                ]
-            },
-            ICMBIO: {
-                url: 'https://geoservicos.icmbio.gov.br/geoserver/wms',
-                camadas: [
-                    { id: 'limite_uc_federais', nome: 'UCs Federais' },
-                    { id: 'zonas_amortecimento', nome: 'Zonas de Amortecimento' }
                 ]
             }
         };
@@ -570,9 +565,17 @@
                             layers: item.id,
                             format: 'image/png',
                             transparent: true,
+                            version: '1.1.1',
+                            srs: 'EPSG:4326',
+                            uppercase: true,
                             attribution: orgao
-                        }).addTo(map);
+                        });
 
+                        layer.on('tileerror', function(error) {
+                            console.warn('Falha no carregamento do WMS do ' + orgao + '. Verifique se o servidor do órgão está ativo e aceita conexões HTTPS do GitHub Pages:', error);
+                        });
+
+                        layer.addTo(map);
                         camadasAtivasWMS[item.id] = layer;
                     } else {
                         if (camadasAtivasWMS[item.id]) {
@@ -588,7 +591,6 @@
             });
         });
 
-        // Minimizar / Expandir o painel WMS
         var toggleBtn = document.getElementById('toggle-painel-wms');
         var corpoPainel = document.getElementById('corpo-painel-wms');
         toggleBtn.addEventListener('click', function() {
