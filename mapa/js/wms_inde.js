@@ -92,11 +92,31 @@ function linkCarregar(i, texto) {
     return { label: '<a href="#" onclick="carregarAgenciaWMS(' + i + '); return false;">' + texto + '</a>' };
 }
 
+/* Marca como aberto o caminho até um nó (senão o redesenho da árvore
+   devolve cada grupo ao collapsed:true e o painel parece "fechar"),
+   redesenha e mantém a rolagem do painel. */
+function abrirCaminho(arvore, alvo) {
+    for (var i = 0; i < arvore.length; i++) {
+        var n = arvore[i];
+        if (n === alvo) { n.collapsed = false; return true; }
+        if (n.children && abrirCaminho(n.children, alvo)) { n.collapsed = false; return true; }
+    }
+    return false;
+}
+
+function atualizarArvore(nodo) {
+    var painel = lay.getContainer();
+    var rolagem = painel.scrollTop;
+    abrirCaminho(overlaysTree, nodo);
+    lay.setOverlayTree(overlaysTree);
+    painel.scrollTop = rolagem;
+}
+
 function carregarAgenciaWMS(i) {
     var ag = AGENCIAS_WMS[i];
     var nodo = ag._nodo;
     nodo.children = [{ label: '<i>Carregando camadas...</i>' }];
-    lay.setOverlayTree(overlaysTree);
+    atualizarArvore(nodo);
 
     fetch(ag.url + '?service=WMS&version=1.3.0&request=GetCapabilities')
         .then(function (r) {
@@ -113,7 +133,7 @@ function carregarAgenciaWMS(i) {
                 if (unico) filhos = [unico];
             }
             nodo.children = filhos.length ? filhos : [{ label: '<i>Nenhuma camada encontrada</i>' }];
-            lay.setOverlayTree(overlaysTree);
+            atualizarArvore(nodo);
         })
         .catch(function (err) {
             console.error('WMS ' + ag.sigla + ':', err);
@@ -121,7 +141,7 @@ function carregarAgenciaWMS(i) {
                 { label: '<i>Falhou (' + escHtml(err.message) + ')</i>' },
                 linkCarregar(i, 'Tentar de novo')
             ];
-            lay.setOverlayTree(overlaysTree);
+            atualizarArvore(nodo);
         });
 }
 
