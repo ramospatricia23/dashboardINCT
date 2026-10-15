@@ -1,3 +1,6 @@
+/* Camadas WMS da INDE: selecionar serviço, clicar em pesquisar e carregar.
+   Depende de: map (global) e do painel .leaflet-control-layers (Leaflet).
+   Uso: chamar montarPainelINDE() depois de criar o controle de camadas. */
 /* Camadas WMS da INDE com carregamento sob demanda.
    Depende de: map, overlaysTree e lay (L.control.layers.tree) globais. */
 
@@ -49,7 +52,13 @@ map.createPane('pane_wms');
 map.getPane('pane_wms').style.zIndex = 402;
 
 function escHtml(s) {
-    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+var wmsAtivas = {};   // chave url|camada -> L.tileLayer.wms adicionada ao mapa
+
+function filhosLayer(el) {
+    return Array.prototype.filter.call(el.children, function (c) { return c.localName === 'Layer'; });
 }
 
 function textoFilho(el, tag) {
@@ -59,144 +68,138 @@ function textoFilho(el, tag) {
     return '';
 }
 
-function filhosLayer(el) {
-    return Array.prototype.filter.call(el.children, function (c) { return c.localName === 'Layer'; });
-}
-
-function nodoLayer(el, url) {
+/* Achata a árvore de Layers do GetCapabilities numa lista de camadas */
+function coletarCamadas(el, grupo, saida) {
     var nome = textoFilho(el, 'Name');
     var titulo = textoFilho(el, 'Title') || nome;
-    var filhos = filhosLayer(el).map(function (f) { return nodoLayer(f, url); }).filter(Boolean);
-
-    if (filhos.length) {
-        return { label: '<b>' + escHtml(titulo) + '</b>', collapsed: true, children: filhos };
-    }
-    if (nome) {
-        return {
-            label: escHtml(titulo),
-            layer: L.tileLayer.wms(url, {
-                pane: 'pane_wms',
-                layers: nome,
-                format: 'image/png',
-                transparent: true,
-                version: '1.3.0',
-                opacity: 0.85,
-                attribution: 'INDE'
-            })
-        };
-    }
-    return null;
-}
-
-function linkCarregar(i, texto) {
-    return { label: '<a href="#" onclick="carregarAgenciaWMS(' + i + '); return false;">' + texto + '</a>' };
-}
-
-/* Marca como aberto o caminho até um nó (senão o redesenho da árvore
-   devolve cada grupo ao collapsed:true e o painel parece "fechar"),
-   redesenha e mantém a rolagem do painel. */
-function abrirCaminho(arvore, alvo) {
-    for (var i = 0; i < arvore.length; i++) {
-        var n = arvore[i];
-        if (n === alvo) { n.collapsed = false; return true; }
-        if (n.children && abrirCaminho(n.children, alvo)) { n.collapsed = false; return true; }
-    }
-    return false;
-}
-
-/* Lista todos os nós da árvore em profundidade (mesma ordem do DOM). */
-function achatarArvore(arvore, saida) {
-    arvore.forEach(function (n) {
-        saida.push(n);
-        if (n.children) achatarArvore(n.children, saida);
-    });
+    var filhos = filhosLayer(el);
+    if (nome) saida.push({ nome: nome, titulo: titulo, grupo: grupo });
+    var proximo = filhos.length && !nome ? (grupo ? grupo + ' › ' : '') + titulo : grupo;
+    filhos.forEach(function (f) { coletarCamadas(f, proximo, saida); });
     return saida;
 }
 
-/* Lê no DOM quais grupos o usuário deixou abertos e grava em n.collapsed,
-   para o redesenho da árvore não fechar os grupos que já estavam abertos.
-   Se a estrutura do DOM não bater com a árvore, não mexe em nada. */
-function guardarEstadoGrupos(painel) {
-    try {
-        var nos = achatarArvore(overlaysTree, []);
-        var els = painel.querySelectorAll('.leaflet-layerstree-node');
-        if (els.length !== nos.length) return;
-        nos.forEach(function (n, i) {
-            if (!n.children) return;
-            var filhos = null;
-            for (var k = 0; k < els[i].children.length; k++) {
-                if (els[i].children[k].classList.contains('leaflet-layerstree-children')) {
-                    filhos = els[i].children[k];
-                    break;
-                }
-            }
-            if (!filhos) return;
-            var fechado = els[i].classList.contains('closed') ||
-                          getComputedStyle(filhos).display === 'none';
-            n.collapsed = fechado;
+function injetarEstiloINDE() {
+    if (document.getElementById('estilo-inde')) return;
+    var st = document.createElement('style');
+    st.id = 'estilo-inde';
+    st.textContent =
+        '.inde-bloco{border-bottom:1px solid #ECEEE8;margin-bottom:10px;padding-bottom:10px;font-size:12px}' +
+        '.inde-bloco h4{margin:0 0 8px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#024B30}' +
+        '.inde-bloco select,.inde-bloco input[type=text]{width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid #c9d3cc;border-radius:6px;font:inherit;background:#fff;color:#024B30}' +
+        '.inde-linha{display:flex;gap:6px;margin-top:6px}' +
+        '.inde-linha input{flex:1;min-width:0}' +
+        '.inde-btn{border:none;border-radius:6px;background:#eef1ee;color:#024B30;cursor:pointer;padding:0 10px;font-size:15px;line-height:1}' +
+        '.inde-btn:hover{background:#d8e6dd}' +
+        '.inde-status{margin-top:6px;color:#4a5f55}' +
+        '.inde-lista{margin-top:6px;max-height:240px;overflow-y:auto;border:1px solid #ECEEE8;border-radius:6px;background:#fff}' +
+        '.inde-lista label{display:flex!important;align-items:flex-start!important;gap:6px;padding:5px 8px;margin:0!important;border-bottom:1px solid #f1f3f1;cursor:pointer}' +
+        '.inde-lista label input{margin-top:2px;flex:none}' +
+        '.inde-lista small{display:block;color:#7a8b82}';
+    document.head.appendChild(st);
+}
+
+function montarPainelINDE() {
+    var painel = document.querySelector('#map .leaflet-control-layers');
+    if (!painel || painel.querySelector('.inde-bloco')) return;
+    injetarEstiloINDE();
+
+    var bloco = document.createElement('div');
+    bloco.className = 'inde-bloco';
+    bloco.innerHTML =
+        '<h4>Camadas INDE (WMS)</h4>' +
+        '<select class="inde-sel"><option value="">---- Selecione um Serviço ----</option>' +
+        AGENCIAS_WMS.map(function (a, i) {
+            return '<option value="' + i + '">' + escHtml(a.sigla + ' - ' + a.nome) + '</option>';
+        }).join('') + '</select>' +
+        '<div class="inde-linha"><input type="text" class="inde-url" placeholder="http://...">' +
+        '<button type="button" class="inde-btn inde-buscar" title="Pesquisar">&#128269;</button>' +
+        '<button type="button" class="inde-btn inde-limpar" title="Limpar">&times;</button></div>' +
+        '<div class="inde-status"></div>' +
+        '<input type="text" class="inde-filtro" placeholder="Filtrar camadas" style="display:none;margin-top:6px">' +
+        '<div class="inde-lista" style="display:none"></div>';
+
+    var topo = painel.querySelector('.painel-camadas-topo');
+    painel.insertBefore(bloco, topo ? topo.nextSibling : painel.firstChild);
+
+    var sel = bloco.querySelector('.inde-sel');
+    var inUrl = bloco.querySelector('.inde-url');
+    var status = bloco.querySelector('.inde-status');
+    var filtro = bloco.querySelector('.inde-filtro');
+    var lista = bloco.querySelector('.inde-lista');
+    var camadas = [];
+    var urlAtual = '';
+
+    function desenharLista() {
+        var termo = filtro.value.trim().toLowerCase();
+        var html = '';
+        camadas.forEach(function (c, i) {
+            if (termo && (c.titulo + ' ' + c.nome + ' ' + c.grupo).toLowerCase().indexOf(termo) === -1) return;
+            var marcada = wmsAtivas[urlAtual + '|' + c.nome] ? ' checked' : '';
+            html += '<label><input type="checkbox" data-i="' + i + '"' + marcada + '><span>' +
+                escHtml(c.titulo) + (c.grupo ? '<small>' + escHtml(c.grupo) + '</small>' : '') + '</span></label>';
         });
-    } catch (e) { /* mantém o comportamento padrão */ }
-}
+        lista.innerHTML = html || '<div style="padding:8px"><i>Nenhuma camada corresponde ao filtro</i></div>';
+    }
 
-function atualizarArvore(nodo) {
-    var painel = document.querySelector('#map .leaflet-control-layers') || lay.getContainer();
-    var rolagem = painel.scrollTop;
-    guardarEstadoGrupos(painel);
-    abrirCaminho(overlaysTree, nodo);
-    lay.setOverlayTree(overlaysTree);
+    function pesquisar() {
+        var url = inUrl.value.trim().split('?')[0];
+        if (!url) { status.textContent = 'Selecione um serviço ou informe uma URL.'; return; }
+        status.textContent = 'Carregando camadas...';
+        filtro.style.display = lista.style.display = 'none';
+        var req = url + '?service=WMS&version=1.3.0&request=GetCapabilities';
+        fetch(req)
+            .then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.text();
+            })
+            .then(function (txt) {
+                var doc = new DOMParser().parseFromString(txt, 'text/xml');
+                var raiz = doc.getElementsByTagName('Layer')[0];
+                if (!raiz) throw new Error('resposta sem camadas');
+                urlAtual = url;
+                camadas = coletarCamadas(raiz, '', []);
+                if (!camadas.length) { status.textContent = 'Nenhuma camada encontrada.'; return; }
+                status.textContent = camadas.length + ' camadas encontradas.';
+                filtro.value = '';
+                filtro.style.display = lista.style.display = 'block';
+                desenharLista();
+            })
+            .catch(function (err) {
+                console.error('WMS ' + url + ':', err);
+                status.textContent = 'Falhou (' + err.message + '). Verifique a URL ou se o servidor permite acesso (CORS).';
+            });
+    }
 
-    /* Reaplica já (antes de pintar) a classe de painel aberto e a rolagem,
-       caso o redesenho tenha recriado o controle. */
-    if (typeof prepararPainel === 'function') prepararPainel();
-    var novo = document.querySelector('#map .leaflet-control-layers') || painel;
-    novo.scrollTop = rolagem;
-    requestAnimationFrame(function () { novo.scrollTop = rolagem; });
-}
+    function alternarCamada(c, ligar) {
+        var chave = urlAtual + '|' + c.nome;
+        if (ligar) {
+            var l = L.tileLayer.wms(urlAtual, {
+                pane: 'pane_wms', layers: c.nome, format: 'image/png',
+                transparent: true, version: '1.3.0', opacity: 0.85, attribution: 'INDE'
+            });
+            wmsAtivas[chave] = l;
+            l.addTo(map);
+        } else if (wmsAtivas[chave]) {
+            map.removeLayer(wmsAtivas[chave]);
+            delete wmsAtivas[chave];
+        }
+    }
 
-function carregarAgenciaWMS(i) {
-    var ag = AGENCIAS_WMS[i];
-    var nodo = ag._nodo;
-    nodo.children = [{ label: '<i>Carregando camadas...</i>' }];
-    atualizarArvore(nodo);
-
-    fetch(ag.url + '?service=WMS&version=1.3.0&request=GetCapabilities')
-        .then(function (r) {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
-            return r.text();
-        })
-        .then(function (txt) {
-            var doc = new DOMParser().parseFromString(txt, 'text/xml');
-            var raiz = doc.getElementsByTagName('Layer')[0];
-            if (!raiz) throw new Error('resposta sem camadas');
-            var filhos = filhosLayer(raiz).map(function (f) { return nodoLayer(f, ag.url); }).filter(Boolean);
-            if (!filhos.length) {
-                var unico = nodoLayer(raiz, ag.url);
-                if (unico) filhos = [unico];
-            }
-            nodo.children = filhos.length ? filhos : [{ label: '<i>Nenhuma camada encontrada</i>' }];
-            atualizarArvore(nodo);
-        })
-        .catch(function (err) {
-            console.error('WMS ' + ag.sigla + ':', err);
-            nodo.children = [
-                { label: '<i>Falhou (' + escHtml(err.message) + ')</i>' },
-                linkCarregar(i, 'Tentar de novo')
-            ];
-            atualizarArvore(nodo);
-        });
-}
-
-function grupoINDE() {
-    return {
-        label: '<b>Camadas INDE (WMS)</b>',
-        collapsed: true,
-        children: AGENCIAS_WMS.map(function (ag, i) {
-            ag._nodo = {
-                label: '<b>' + escHtml(ag.sigla) + '</b> <small>' + escHtml(ag.nome) + '</small>',
-                collapsed: true,
-                children: [linkCarregar(i, 'Carregar camadas')]
-            };
-            return ag._nodo;
-        })
-    };
+    sel.addEventListener('change', function () {
+        inUrl.value = sel.value === '' ? '' : AGENCIAS_WMS[+sel.value].url;
+    });
+    bloco.querySelector('.inde-buscar').addEventListener('click', pesquisar);
+    inUrl.addEventListener('keydown', function (e) { if (e.key === 'Enter') pesquisar(); });
+    bloco.querySelector('.inde-limpar').addEventListener('click', function () {
+        sel.value = ''; inUrl.value = ''; status.textContent = '';
+        camadas = []; lista.innerHTML = '';
+        filtro.style.display = lista.style.display = 'none';
+    });
+    filtro.addEventListener('input', desenharLista);
+    lista.addEventListener('change', function (e) {
+        var cb = e.target;
+        if (cb.tagName !== 'INPUT') return;
+        alternarCamada(camadas[+cb.getAttribute('data-i')], cb.checked);
+    });
 }
