@@ -26,7 +26,6 @@
             font-family: 'Chillax', sans-serif;
         }
 
-        /* ===== Botões estilo INDE: bolinha #024B30 com desenho branco ===== */
         .leaflet-top.leaflet-right .leaflet-control {
             margin-top: 8px;
             margin-right: 10px;
@@ -96,52 +95,65 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
-        /* ===== Painel de Camadas Persistente ===== */
-        .painel-camadas {
-            display: none !important;
-            position: absolute !important;
-            top: 0;
-            right: 60px;
+        /* ===== Contentor Fixo Flutuante ===== */
+        #painel-flutuante-camadas {
+            display: none;
+            position: absolute;
+            top: 10px;
+            right: 65px;
             width: 340px;
-            max-width: calc(100vw - 80px);
-            margin: 0 !important;
-            background: rgba(255, 255, 255, 0.97) !important;
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(2, 75, 48, 0.2) !important;
-            border-radius: 8px !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
-            font-family: 'Chillax', sans-serif !important;
-            color: #024B30 !important;
-            padding: 10px 14px !important;
-            max-height: 80vh;
-            overflow-y: auto;
-            z-index: 1000 !important;
+            max-width: calc(100vw - 85px);
+            max-height: 85vh;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(2, 75, 48, 0.25);
+            border-radius: 8px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+            font-family: 'Chillax', sans-serif;
+            color: #024B30;
+            z-index: 1000;
+            overflow: hidden;
+            flex-direction: column;
         }
 
-        .painel-camadas.aberto {
-            display: block !important;
+        #painel-flutuante-camadas.aberto {
+            display: flex;
         }
 
-        .painel-camadas-topo {
+        .painel-topo {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 8px;
-            padding-bottom: 6px;
+            padding: 10px 14px;
             border-bottom: 1px solid #ECEEE8;
             font-weight: 700;
             font-size: 14px;
             color: #024B30;
         }
 
-        .painel-camadas-topo button {
+        .painel-topo button {
             border: none;
             background: transparent;
             color: #024B30;
             font-size: 20px;
-            line-height: 1;
             cursor: pointer;
+            line-height: 1;
             padding: 0 4px;
+        }
+
+        .painel-corpo {
+            padding: 10px 14px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        /* Limpeza do aspecto interno da árvore */
+        .painel-corpo .leaflet-control-layers {
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
         }
 
         .leaflet-control-layers-tree label {
@@ -153,8 +165,7 @@
             margin-bottom: 3px;
         }
 
-        .leaflet-control-layers-tree label img,
-        .painel-camadas label img {
+        .leaflet-control-layers-tree label img {
             width: 14px !important;
             height: 14px !important;
             display: inline-block !important;
@@ -183,7 +194,6 @@
             padding-right: 8px;
         }
 
-        /* ===== Rótulos controlados estritamente pela classe do mapa ===== */
         .rotulo-instituicao {
             display: none;
             background: rgba(255, 251, 247, 0.95);
@@ -208,6 +218,15 @@
     <body>
         <div id="map"></div>
 
+        <!-- Janela desacoplada do Leaflet: nunca fecha ao atualizar o WMS -->
+        <div id="painel-flutuante-camadas">
+            <div class="painel-topo">
+                <span>Camadas</span>
+                <button type="button" id="fechar-painel-btn">&times;</button>
+            </div>
+            <div class="painel-corpo" id="painel-corpo-conteudo"></div>
+        </div>
+
         <script src="js/qgis2web_expressions.js"></script>
         <script src="js/leaflet.js"></script>
         <script src="js/L.Control.Layers.Tree.min.js"></script>
@@ -223,7 +242,6 @@
         <script src="js/leaflet.photon.js"></script>
         <script src="js/leaflet-measure.js"></script>
 
-        <!-- Arquivos da pasta data/ gerados pelo QGIS -->
         <script src="data/FlonaAmazonasPUAC_2.js"></script>
         <script src="data/BaciasHidrogrficas_3.js"></script>
         <script src="data/PontosdemonitoramentoPUNB_4.js"></script>
@@ -292,7 +310,6 @@
 
         var bounds_group = new L.featureGroup([]);
 
-        // Mapas base
         map.createPane('pane_GoogleSatellite_0');
         map.getPane('pane_GoogleSatellite_0').style.zIndex = 400;
         var layer_GoogleSatellite_0 = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
@@ -325,11 +342,9 @@
         map.addLayer(layer_OSMStandard_2);
         </script>
 
-        <!-- Suporte INDE -->
         <script src="js/wms_inde.js"></script>
 
         <script>
-        /* ===== PUAC: Flona Amazonas ===== */
         function pop_FlonaAmazonasPUAC_2(feature, layer) {
             var popupContent = '<table><tr><th scope="row">Nome UC:</th><td>' + (feature.properties['nomeuc'] || '') + '</td></tr><tr><th scope="row">Esfera:</th><td>' + (feature.properties['esferaadm'] || '') + '</td></tr><tr><th scope="row">Bioma:</th><td>' + (feature.properties['biomas'] || '') + '</td></tr></table>';
             layer.bindPopup(popupContent, { maxHeight: 400 });
@@ -344,7 +359,6 @@
         bounds_group.addLayer(layer_FlonaAmazonasPUAC_2);
         map.addLayer(layer_FlonaAmazonasPUAC_2);
 
-        /* ===== PUNB: Bacias Hidrográficas ===== */
         function pop_BaciasHidrogrficas_3(feature, layer) {
             var popupContent = '<table><tr><th scope="row">Bacia:</th><td>' + (feature.properties['Name'] || '') + '</td></tr></table>';
             layer.bindPopup(popupContent, { maxHeight: 400 });
@@ -359,7 +373,6 @@
         bounds_group.addLayer(layer_BaciasHidrogrficas_3);
         map.addLayer(layer_BaciasHidrogrficas_3);
 
-        /* ===== PUNB: Pontos de Monitoramento ===== */
         function pop_PontosdemonitoramentoPUNB_4(feature, layer) {
             var popupContent = '<table><tr><th scope="row">Ponto:</th><td>' + (feature.properties['Name'] || '') + '</td></tr></table>';
             layer.bindPopup(popupContent, { maxHeight: 400 });
@@ -376,7 +389,6 @@
         bounds_group.addLayer(layer_PontosdemonitoramentoPUNB_4);
         map.addLayer(layer_PontosdemonitoramentoPUNB_4);
 
-        /* ===== PUEP: Área de Influência ===== */
         map.createPane('pane_readeinflunciaPUEP_5');
         map.getPane('pane_readeinflunciaPUEP_5').style.zIndex = 406;
         var layer_readeinflunciaPUEP_5 = new L.geoJson(json_readeinflunciaPUEP_5, {
@@ -386,7 +398,6 @@
         bounds_group.addLayer(layer_readeinflunciaPUEP_5);
         map.addLayer(layer_readeinflunciaPUEP_5);
 
-        /* ===== PUEP: Área de Estudo ===== */
         map.createPane('pane_readeestudoPUEP_6');
         map.getPane('pane_readeestudoPUEP_6').style.zIndex = 407;
         var layer_readeestudoPUEP_6 = new L.geoJson(json_readeestudoPUEP_6, {
@@ -396,7 +407,6 @@
         bounds_group.addLayer(layer_readeestudoPUEP_6);
         map.addLayer(layer_readeestudoPUEP_6);
 
-        /* ===== PUEP: Parcelas REBIMAR ===== */
         map.createPane('pane_ParcelasREBIMAR_7');
         map.getPane('pane_ParcelasREBIMAR_7').style.zIndex = 408;
         var layer_ParcelasREBIMAR_7 = new L.geoJson(json_ParcelasREBIMAR_7, {
@@ -406,7 +416,6 @@
         bounds_group.addLayer(layer_ParcelasREBIMAR_7);
         map.addLayer(layer_ParcelasREBIMAR_7);
 
-        /* ===== PUAR: Área de Estudo PUA Araguaia ===== */
         map.createPane('pane_readeestudoPUAAraguaia_8');
         map.getPane('pane_readeestudoPUAAraguaia_8').style.zIndex = 409;
         var layer_readeestudoPUAAraguaia_8 = new L.geoJson(json_readeestudoPUAAraguaia_8, {
@@ -416,7 +425,6 @@
         bounds_group.addLayer(layer_readeestudoPUAAraguaia_8);
         map.addLayer(layer_readeestudoPUAAraguaia_8);
 
-        /* ===== PURJ: Área de Estudo ===== */
         map.createPane('pane_readeestudoPURJ_9');
         map.getPane('pane_readeestudoPURJ_9').style.zIndex = 410;
         var layer_readeestudoPURJ_9 = new L.geoJson(json_readeestudoPURJ_9, {
@@ -426,7 +434,6 @@
         bounds_group.addLayer(layer_readeestudoPURJ_9);
         map.addLayer(layer_readeestudoPURJ_9);
 
-        /* ===== PURJ: Pontos Amostrais ===== */
         map.createPane('pane_PontosamostraisPURJ_10');
         map.getPane('pane_PontosamostraisPURJ_10').style.zIndex = 411;
         var layer_PontosamostraisPURJ_10 = new L.geoJson(json_PontosamostraisPURJ_10, {
@@ -438,7 +445,6 @@
         bounds_group.addLayer(layer_PontosamostraisPURJ_10);
         map.addLayer(layer_PontosamostraisPURJ_10);
 
-        /* ===== PUTM: ESEC Taim ===== */
         map.createPane('pane_ESECTaim_11');
         map.getPane('pane_ESECTaim_11').style.zIndex = 412;
         var layer_ESECTaim_11 = new L.geoJson(json_ESECTaim_11, {
@@ -448,7 +454,6 @@
         bounds_group.addLayer(layer_ESECTaim_11);
         map.addLayer(layer_ESECTaim_11);
 
-        /* ===== PUPA: Parna do Pantanal Matogrossense ===== */
         map.createPane('pane_ParnadoPantanalMatogrossense_12');
         map.getPane('pane_ParnadoPantanalMatogrossense_12').style.zIndex = 413;
         var layer_ParnadoPantanalMatogrossense_12 = new L.geoJson(json_ParnadoPantanalMatogrossense_12, {
@@ -458,7 +463,6 @@
         bounds_group.addLayer(layer_ParnadoPantanalMatogrossense_12);
         map.addLayer(layer_ParnadoPantanalMatogrossense_12);
 
-        /* ===== PUPA: Pantanal ===== */
         function pop_Pantanal_13(feature, layer) {
             var popupContent = '<table><tr><th scope="row">Bioma:</th><td>' + (feature.properties['Bioma'] || '') + '</td></tr></table>';
             layer.bindPopup(popupContent, { maxHeight: 400 });
@@ -473,7 +477,6 @@
         bounds_group.addLayer(layer_Pantanal_13);
         map.addLayer(layer_Pantanal_13);
 
-        /* ===== PUPA: SESC Pantanal ===== */
         function pop_SESCPantanal_14(feature, layer) {
             var p = feature.properties;
             var popupContent = '<table>' +
@@ -513,7 +516,6 @@
         bounds_group.addLayer(layer_SESCPantanal_14);
         map.addLayer(layer_SESCPantanal_14);
 
-        /* ===== Instituições Polos INCT Wetscape ===== */
         function pop_LML_instituicoesINCTWetscape(feature, layer) {
             var popupContent = '<div style="font-size: 13px; font-weight: 700; color: #024B30; padding: 4px;">' + (feature.properties['Name'] || 'Instituição') + '</div>';
             layer.bindPopup(popupContent);
@@ -563,7 +565,6 @@
         bounds_group.addLayer(layer_LML_instituicoesINCTWetscapelml_instituicoesinctwetscape_15);
         map.addLayer(layer_LML_instituicoesINCTWetscapelml_instituicoesinctwetscape_15);
 
-        // Estrutura da árvore de camadas
         var overlaysTree = [
             {
                 label: '<b>Instituições</b>',
@@ -614,74 +615,33 @@
             }
         ];
 
+        // Inicialização padrão do plugin (sem reescrever métodos internos)
         var lay = L.control.layers.tree(null, overlaysTree, {
             collapsed: false
         });
         lay.addTo(map);
 
-        /* ===== Gerenciamento Robusto do Painel e Persistência ===== */
-        var painelCamadas = lay.getContainer();
-        painelCamadas.classList.add('painel-camadas');
+        // Move o contentor original para dentro da nossa caixa flutuante independente
+        var painelFlutuante = document.getElementById('painel-flutuante-camadas');
+        var corpoPainel = document.getElementById('painel-corpo-conteudo');
+        var containerOriginal = lay.getContainer();
+        
+        corpoPainel.appendChild(containerOriginal);
 
-        L.DomEvent.disableClickPropagation(painelCamadas);
-        L.DomEvent.disableScrollPropagation(painelCamadas);
+        // Bloqueia a propagação de eventos do rato para o mapa
+        L.DomEvent.disableClickPropagation(painelFlutuante);
+        L.DomEvent.disableScrollPropagation(painelFlutuante);
 
         var botaoCamadasLink = null;
-        var painelEstaAberto = false;
-
-        function alternarPainelCamadas(forcarEstado) {
-            if (typeof forcarEstado === 'boolean') {
-                painelEstaAberto = forcarEstado;
-            } else {
-                painelEstaAberto = !painelEstaAberto;
-            }
-            painelCamadas.classList.toggle('aberto', painelEstaAberto);
-            if (botaoCamadasLink) {
-                botaoCamadasLink.classList.toggle('ativo', painelEstaAberto);
-            }
+        function alternarPainelCamadas(forcar) {
+            var aberto = painelFlutuante.classList.toggle('aberto', forcar);
+            if (botaoCamadasLink) botaoCamadasLink.classList.toggle('ativo', aberto);
         }
 
-        function montarCabecalhoPainel() {
-            if (!painelCamadas.querySelector('.painel-camadas-topo')) {
-                var topoPainel = document.createElement('div');
-                topoPainel.className = 'painel-camadas-topo';
-                topoPainel.innerHTML = '<span>Camadas</span>';
-                var botaoFechar = document.createElement('button');
-                botaoFechar.type = 'button';
-                botaoFechar.title = 'Fechar';
-                botaoFechar.innerHTML = '&times;';
-                botaoFechar.addEventListener('click', function (e) {
-                    e.stopPropagation();
-                    alternarPainelCamadas(false);
-                });
-                topoPainel.appendChild(botaoFechar);
-                painelCamadas.insertBefore(topoPainel, painelCamadas.firstChild);
-            }
-        }
-
-        montarCabecalhoPainel();
-
-        // Evita que o wms_inde.js feche o painel ao redesenhar a árvore
-        var _setOverlayTreeOriginal = lay.setOverlayTree.bind(lay);
-        lay.setOverlayTree = function (arvore) {
-            var rolagem = painelCamadas.scrollTop;
-            var resultado = _setOverlayTreeOriginal(arvore);
-
-            painelCamadas = lay.getContainer();
-            painelCamadas.classList.add('painel-camadas');
-            L.DomEvent.disableClickPropagation(painelCamadas);
-            L.DomEvent.disableScrollPropagation(painelCamadas);
-
-            montarCabecalhoPainel();
-
-            if (painelEstaAberto) {
-                painelCamadas.classList.add('aberto');
-                if (botaoCamadasLink) botaoCamadasLink.classList.add('ativo');
-            }
-            painelCamadas.scrollTop = rolagem;
-
-            return resultado;
-        };
+        document.getElementById('fechar-painel-btn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            alternarPainelCamadas(false);
+        });
 
         var BotaoCamadas = L.Control.extend({
             options: { position: 'topright' },
@@ -703,7 +663,6 @@
         });
         new BotaoCamadas().addTo(map);
 
-        /* Gestão da escala dos rótulos por classe CSS no mapa */
         function verificarEscalaRotulos() {
             var mapaEl = document.getElementById('map');
             if (map.getZoom() >= 6) {
