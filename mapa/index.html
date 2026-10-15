@@ -84,7 +84,6 @@
             cursor: default;
         }
 
-        /* estados "ativo" (localização seguindo / painel de camadas aberto) */
         .leaflet-control-locate.active a,
         .botao-camadas a.ativo {
             background: #FFCD61 !important;
@@ -97,7 +96,7 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
-        /* ===== Painel de camadas (fixo ao clicar no botão) ===== */
+        /* ===== Painel de Camadas ===== */
         .painel-camadas {
             display: none !important;
             position: absolute !important;
@@ -145,10 +144,23 @@
         }
 
         .leaflet-control-layers-tree label {
+            display: flex !important;
+            align-items: center !important;
             font-size: 12px;
             font-weight: 500;
             cursor: pointer;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
+        }
+
+        /* Força a imagem de legenda a ficar visível e alinhada com o texto */
+        .leaflet-control-layers-tree label img,
+        .painel-camadas label img {
+            width: 14px !important;
+            height: 14px !important;
+            display: inline-block !important;
+            vertical-align: middle !important;
+            margin-right: 6px !important;
+            object-fit: contain;
         }
 
         .leaflet-control-layers-tree b {
@@ -171,7 +183,9 @@
             padding-right: 8px;
         }
 
+        /* Estilo do Rótulo das Instituições com ocultação automática por padrão */
         .rotulo-instituicao {
+            display: none; /* Controlado via classe do mapa */
             background: rgba(255, 251, 247, 0.95);
             border: 1px solid #024B30;
             border-radius: 4px;
@@ -182,6 +196,12 @@
             font-size: 11px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
             pointer-events: none;
+            white-space: nowrap;
+        }
+
+        /* Só exibe o rótulo quando o container do mapa tiver a classe 'exibir-rotulos' */
+        .exibir-rotulos .rotulo-instituicao {
+            display: block !important;
         }
         </style>
         <title>Mapa Interativo INCT Wetscape</title>
@@ -204,6 +224,7 @@
         <script src="js/leaflet.photon.js"></script>
         <script src="js/leaflet-measure.js"></script>
 
+        <!-- Dados vetoriais gerados pelo QGIS -->
         <script src="data/FlonaAmazonasPUAC_2.js"></script>
         <script src="data/BaciasHidrogrficas_3.js"></script>
         <script src="data/PontosdemonitoramentoPUNB_4.js"></script>
@@ -221,10 +242,10 @@
 
         <script>
         var map = L.map('map', {
-            zoomControl: false,
-            maxZoom: 20,
-            minZoom: 3
-        }).fitBounds([[-45.84691241622821,-94.47540587799152],[16.370280961743685,-13.494297036821749]]);
+            zoomControl: false, 
+            maxZoom: 20, 
+            minZoom: 2
+        }).fitBounds([[-41.26786166971988,-80.94453683414898],[19.717911655108935,0.03657200701715624]]);
 
         var hash = new L.Hash(map);
         map.attributionControl.setPrefix('<a href="https://github.com/qgis2web/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com">Leaflet</a> &middot; INCT Wetscape');
@@ -244,20 +265,7 @@
             return tempDiv.innerHTML;
         }
 
-        function addClassToPopupIfMedia(content, popup) {
-            var tempDiv = document.createElement('div');
-            tempDiv.innerHTML = content;
-            var imgTd = tempDiv.querySelector('td img');
-            if (imgTd) {
-                var src = imgTd.getAttribute('src');
-                if (/\.(jpg|jpeg|png|gif|bmp|webp|avif)$/i.test(src)) {
-                    popup._contentNode.classList.add('media');
-                    setTimeout(function() { popup.update(); }, 10);
-                }
-            }
-        }
-
-        /* Botões no canto direito, estilo INDE (ordem de cima para baixo) */
+        // Controles de interface
         L.control.zoom({ position: 'topright' }).addTo(map);
 
         L.control.locate({
@@ -286,13 +294,14 @@
 
         var bounds_group = new L.featureGroup([]);
 
+        // Mapas base
         map.createPane('pane_GoogleSatellite_0');
         map.getPane('pane_GoogleSatellite_0').style.zIndex = 400;
         var layer_GoogleSatellite_0 = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
             pane: 'pane_GoogleSatellite_0',
             opacity: 1.0,
             attribution: 'Google Satellite',
-            minZoom: 3,
+            minZoom: 2,
             maxZoom: 20
         });
 
@@ -302,7 +311,7 @@
             pane: 'pane_GoogleHybrid_1',
             opacity: 1.0,
             attribution: 'Google Hybrid',
-            minZoom: 3,
+            minZoom: 2,
             maxZoom: 20
         });
 
@@ -312,13 +321,13 @@
             pane: 'pane_OSMStandard_2',
             opacity: 1.0,
             attribution: '© OpenStreetMap contributors',
-            minZoom: 3,
+            minZoom: 2,
             maxZoom: 19
         });
         map.addLayer(layer_OSMStandard_2);
         </script>
 
-        <!-- Camadas WMS da INDE: precisa vir depois dos mapas de fundo (para o pane_wms ficar acima do OSM) e antes do overlaysTree -->
+        <!-- Suporte a WMS INDE -->
         <script src="js/wms_inde.js"></script>
 
         <script>
@@ -332,7 +341,7 @@
         var layer_FlonaAmazonasPUAC_2 = new L.geoJson(json_FlonaAmazonasPUAC_2, {
             pane: 'pane_FlonaAmazonasPUAC_2',
             onEachFeature: pop_FlonaAmazonasPUAC_2,
-            style: { opacity: 1, color: 'rgba(255,205,97,1.0)', weight: 4.0, fillOpacity: 0 }
+            style: { opacity: 1, color: 'rgba(255,205,97,1.0)', weight: 3.5, fillOpacity: 0 }
         });
         bounds_group.addLayer(layer_FlonaAmazonasPUAC_2);
         map.addLayer(layer_FlonaAmazonasPUAC_2);
@@ -347,14 +356,14 @@
         var layer_BaciasHidrogrficas_3 = new L.geoJson(json_BaciasHidrogrficas_3, {
             pane: 'pane_BaciasHidrogrficas_3',
             onEachFeature: pop_BaciasHidrogrficas_3,
-            style: { opacity: 1, color: 'rgba(255,205,97,1.0)', weight: 4.0, fillOpacity: 0 }
+            style: { opacity: 1, color: 'rgba(255,205,97,1.0)', weight: 3.0, fillOpacity: 0 }
         });
         bounds_group.addLayer(layer_BaciasHidrogrficas_3);
         map.addLayer(layer_BaciasHidrogrficas_3);
 
-        /* ===== PUNB: Pontos de monitoramento ===== */
+        /* ===== PUNB: Pontos de Monitoramento ===== */
         function pop_PontosdemonitoramentoPUNB_4(feature, layer) {
-            var popupContent = '<table><tr><th scope="row">Ponto:</th><td>' + (feature.properties['Name'] || '') + '</td></tr><tr><th scope="row">Descrição:</th><td>' + (feature.properties['descriptio'] || '') + '</td></tr></table>';
+            var popupContent = '<table><tr><th scope="row">Ponto:</th><td>' + (feature.properties['Name'] || '') + '</td></tr></table>';
             layer.bindPopup(popupContent, { maxHeight: 400 });
         }
         map.createPane('pane_PontosdemonitoramentoPUNB_4');
@@ -363,28 +372,28 @@
             pane: 'pane_PontosdemonitoramentoPUNB_4',
             onEachFeature: pop_PontosdemonitoramentoPUNB_4,
             pointToLayer: function (feature, latlng) {
-                return L.circleMarker(latlng, { radius: 3.0, color: 'rgba(247,225,55,1.0)', weight: 2.0, fill: true, fillOpacity: 1, fillColor: 'rgba(250,255,57,1.0)' });
+                return L.circleMarker(latlng, { radius: 3.5, color: 'rgba(247,225,55,1.0)', weight: 2.0, fill: true, fillOpacity: 1, fillColor: 'rgba(250,255,57,1.0)' });
             }
         });
         bounds_group.addLayer(layer_PontosdemonitoramentoPUNB_4);
         map.addLayer(layer_PontosdemonitoramentoPUNB_4);
 
-        /* ===== PUEP: Área de influência ===== */
+        /* ===== PUEP: Área de Influência ===== */
         map.createPane('pane_readeinflunciaPUEP_5');
         map.getPane('pane_readeinflunciaPUEP_5').style.zIndex = 406;
         var layer_readeinflunciaPUEP_5 = new L.geoJson(json_readeinflunciaPUEP_5, {
             pane: 'pane_readeinflunciaPUEP_5',
-            style: { opacity: 1, color: 'rgba(53,226,177,1.0)', weight: 4.0, fillOpacity: 0 }
+            style: { opacity: 1, color: 'rgba(53,226,177,1.0)', weight: 3.5, fillOpacity: 0 }
         });
         bounds_group.addLayer(layer_readeinflunciaPUEP_5);
         map.addLayer(layer_readeinflunciaPUEP_5);
 
-        /* ===== PUEP: Área de estudo ===== */
+        /* ===== PUEP: Área de Estudo ===== */
         map.createPane('pane_readeestudoPUEP_6');
         map.getPane('pane_readeestudoPUEP_6').style.zIndex = 407;
         var layer_readeestudoPUEP_6 = new L.geoJson(json_readeestudoPUEP_6, {
             pane: 'pane_readeestudoPUEP_6',
-            style: { opacity: 1, color: 'rgba(146,175,235,1.0)', weight: 4.0, fillOpacity: 0 }
+            style: { opacity: 1, color: 'rgba(146,175,235,1.0)', weight: 3.5, fillOpacity: 0 }
         });
         bounds_group.addLayer(layer_readeestudoPUEP_6);
         map.addLayer(layer_readeestudoPUEP_6);
@@ -394,38 +403,38 @@
         map.getPane('pane_ParcelasREBIMAR_7').style.zIndex = 408;
         var layer_ParcelasREBIMAR_7 = new L.geoJson(json_ParcelasREBIMAR_7, {
             pane: 'pane_ParcelasREBIMAR_7',
-            style: { opacity: 1, color: 'rgba(255,250,3,1.0)', weight: 7.0, fillOpacity: 0 }
+            style: { opacity: 1, color: 'rgba(255,250,3,1.0)', weight: 5.0, fillOpacity: 0 }
         });
         bounds_group.addLayer(layer_ParcelasREBIMAR_7);
         map.addLayer(layer_ParcelasREBIMAR_7);
 
-        /* ===== PUAR: Área de estudo PUA Araguaia ===== */
+        /* ===== PUAR: Área de Estudo PUA Araguaia ===== */
         map.createPane('pane_readeestudoPUAAraguaia_8');
         map.getPane('pane_readeestudoPUAAraguaia_8').style.zIndex = 409;
         var layer_readeestudoPUAAraguaia_8 = new L.geoJson(json_readeestudoPUAAraguaia_8, {
             pane: 'pane_readeestudoPUAAraguaia_8',
-            style: { opacity: 1, color: 'rgba(255,205,97,1.0)', weight: 4.0, fillOpacity: 0 }
+            style: { opacity: 1, color: 'rgba(255,205,97,1.0)', weight: 3.5, fillOpacity: 0 }
         });
         bounds_group.addLayer(layer_readeestudoPUAAraguaia_8);
         map.addLayer(layer_readeestudoPUAAraguaia_8);
 
-        /* ===== PURJ: Área de estudo ===== */
+        /* ===== PURJ: Área de Estudo ===== */
         map.createPane('pane_readeestudoPURJ_9');
         map.getPane('pane_readeestudoPURJ_9').style.zIndex = 410;
         var layer_readeestudoPURJ_9 = new L.geoJson(json_readeestudoPURJ_9, {
             pane: 'pane_readeestudoPURJ_9',
-            style: { opacity: 1, color: 'rgba(146,175,235,1.0)', weight: 4.0, fillOpacity: 0 }
+            style: { opacity: 1, color: 'rgba(146,175,235,1.0)', weight: 3.5, fillOpacity: 0 }
         });
         bounds_group.addLayer(layer_readeestudoPURJ_9);
         map.addLayer(layer_readeestudoPURJ_9);
 
-        /* ===== PURJ: Pontos amostrais ===== */
+        /* ===== PURJ: Pontos Amostrais ===== */
         map.createPane('pane_PontosamostraisPURJ_10');
         map.getPane('pane_PontosamostraisPURJ_10').style.zIndex = 411;
         var layer_PontosamostraisPURJ_10 = new L.geoJson(json_PontosamostraisPURJ_10, {
             pane: 'pane_PontosamostraisPURJ_10',
             pointToLayer: function (feature, latlng) {
-                return L.circleMarker(latlng, { radius: 3.0, color: 'rgba(247,225,55,1.0)', weight: 2.0, fill: true, fillOpacity: 1, fillColor: 'rgba(250,255,57,1.0)' });
+                return L.circleMarker(latlng, { radius: 3.5, color: 'rgba(247,225,55,1.0)', weight: 2.0, fill: true, fillOpacity: 1, fillColor: 'rgba(250,255,57,1.0)' });
             }
         });
         bounds_group.addLayer(layer_PontosamostraisPURJ_10);
@@ -436,7 +445,7 @@
         map.getPane('pane_ESECTaim_11').style.zIndex = 412;
         var layer_ESECTaim_11 = new L.geoJson(json_ESECTaim_11, {
             pane: 'pane_ESECTaim_11',
-            style: { opacity: 1, color: 'rgba(146,175,235,1.0)', weight: 4.0, fillOpacity: 0 }
+            style: { opacity: 1, color: 'rgba(146,175,235,1.0)', weight: 3.5, fillOpacity: 0 }
         });
         bounds_group.addLayer(layer_ESECTaim_11);
         map.addLayer(layer_ESECTaim_11);
@@ -446,12 +455,12 @@
         map.getPane('pane_ParnadoPantanalMatogrossense_12').style.zIndex = 413;
         var layer_ParnadoPantanalMatogrossense_12 = new L.geoJson(json_ParnadoPantanalMatogrossense_12, {
             pane: 'pane_ParnadoPantanalMatogrossense_12',
-            style: { opacity: 1, color: 'rgba(255,205,97,1.0)', weight: 4.0, fillOpacity: 0 }
+            style: { opacity: 1, color: 'rgba(255,205,97,1.0)', weight: 3.5, fillOpacity: 0 }
         });
         bounds_group.addLayer(layer_ParnadoPantanalMatogrossense_12);
         map.addLayer(layer_ParnadoPantanalMatogrossense_12);
 
-        /* ===== PUPA: Pantanal (nova) ===== */
+        /* ===== PUPA: Pantanal ===== */
         function pop_Pantanal_13(feature, layer) {
             var popupContent = '<table><tr><th scope="row">Bioma:</th><td>' + (feature.properties['Bioma'] || '') + '</td></tr></table>';
             layer.bindPopup(popupContent, { maxHeight: 400 });
@@ -461,12 +470,12 @@
         var layer_Pantanal_13 = new L.geoJson(json_Pantanal_13, {
             pane: 'pane_Pantanal_13',
             onEachFeature: pop_Pantanal_13,
-            style: { opacity: 1, color: 'rgba(255,205,97,1.0)', weight: 4.0, fillOpacity: 0 }
+            style: { opacity: 1, color: 'rgba(255,205,97,1.0)', weight: 3.5, fillOpacity: 0 }
         });
         bounds_group.addLayer(layer_Pantanal_13);
         map.addLayer(layer_Pantanal_13);
 
-        /* ===== PUPA: SESC Pantanal (nova; preenchimento listrado + contorno) ===== */
+        /* ===== PUPA: SESC Pantanal ===== */
         function pop_SESCPantanal_14(feature, layer) {
             var p = feature.properties;
             var popupContent = '<table>' +
@@ -480,14 +489,15 @@
             layer.bindPopup(popupContent, { maxHeight: 400 });
         }
         var pattern_SESCPantanal_14 = new L.StripePattern({
-            weight: 0.3,
-            spaceWeight: 2.0,
+            weight: 0.5,
+            spaceWeight: 2.5,
             color: '#ffcd61',
             opacity: 1.0,
             spaceOpacity: 0,
             angle: 225
         });
         pattern_SESCPantanal_14.addTo(map);
+
         map.createPane('pane_SESCPantanal_14');
         map.getPane('pane_SESCPantanal_14').style.zIndex = 415;
         var layer_SESCPantanal_14 = L.layerGroup([
@@ -505,7 +515,7 @@
         bounds_group.addLayer(layer_SESCPantanal_14);
         map.addLayer(layer_SESCPantanal_14);
 
-        /* ===== Instituições (círculo bege com ponto central + rótulo) ===== */
+        /* ===== Instituições (Rótulo controlado rigorosamente pela classe .exibir-rotulos) ===== */
         function pop_LML_instituicoesINCTWetscape(feature, layer) {
             var popupContent = '<div style="font-size: 13px; font-weight: 700; color: #024B30; padding: 4px;">' + (feature.properties['Name'] || 'Instituição') + '</div>';
             layer.bindPopup(popupContent);
@@ -555,6 +565,7 @@
         bounds_group.addLayer(layer_LML_instituicoesINCTWetscapelml_instituicoesinctwetscape_15);
         map.addLayer(layer_LML_instituicoesINCTWetscapelml_instituicoesinctwetscape_15);
 
+        // Árvore com links diretos aos arquivos PNG da pasta legend/
         var overlaysTree = [
             {
                 label: '<b>Instituições</b>',
@@ -570,12 +581,16 @@
                         { label: '<img src="legend/Pantanal_13.png" /> Pantanal', layer: layer_Pantanal_13 },
                         { label: '<img src="legend/ParnadoPantanalMatogrossense_12.png" /> Parna do Pantanal Matogrossense', layer: layer_ParnadoPantanalMatogrossense_12 }
                     ]},
-                    { label: '<b>PUTM</b>', collapsed: true, children: [{ label: '<img src="legend/ESECTaim_11.png" /> ESEC TAIM', layer: layer_ESECTaim_11 }] },
+                    { label: '<b>PUTM</b>', collapsed: true, children: [
+                        { label: '<img src="legend/ESECTaim_11.png" /> ESEC TAIM', layer: layer_ESECTaim_11 }
+                    ]},
                     { label: '<b>PURJ</b>', collapsed: true, children: [
                         { label: '<img src="legend/PontosamostraisPURJ_10.png" /> Pontos Amostrais', layer: layer_PontosamostraisPURJ_10 },
                         { label: '<img src="legend/readeestudoPURJ_9.png" /> Área de Estudo', layer: layer_readeestudoPURJ_9 }
                     ]},
-                    { label: '<b>PUAR</b>', collapsed: true, children: [{ label: '<img src="legend/readeestudoPUAAraguaia_8.png" /> Área de Estudo PUA Araguaia', layer: layer_readeestudoPUAAraguaia_8 }] },
+                    { label: '<b>PUAR</b>', collapsed: true, children: [
+                        { label: '<img src="legend/readeestudoPUAAraguaia_8.png" /> Área de Estudo PUA Araguaia', layer: layer_readeestudoPUAAraguaia_8 }
+                    ]},
                     { label: '<b>PUEP</b>', collapsed: true, children: [
                         { label: '<img src="legend/ParcelasREBIMAR_7.png" /> Parcelas REBIMAR', layer: layer_ParcelasREBIMAR_7 },
                         { label: '<img src="legend/readeestudoPUEP_6.png" /> Área de Estudo', layer: layer_readeestudoPUEP_6 },
@@ -585,7 +600,9 @@
                         { label: '<img src="legend/PontosdemonitoramentoPUNB_4.png" /> Pontos de Monitoramento', layer: layer_PontosdemonitoramentoPUNB_4 },
                         { label: '<img src="legend/BaciasHidrogrficas_3.png" /> Bacias Hidrográficas', layer: layer_BaciasHidrogrficas_3 }
                     ]},
-                    { label: '<b>PUAC</b>', collapsed: true, children: [{ label: '<img src="legend/FlonaAmazonasPUAC_2.png" /> FLONA Amazonas', layer: layer_FlonaAmazonasPUAC_2 }] }
+                    { label: '<b>PUAC</b>', collapsed: true, children: [
+                        { label: '<img src="legend/FlonaAmazonasPUAC_2.png" /> FLONA Amazonas', layer: layer_FlonaAmazonasPUAC_2 }
+                    ]}
                 ]
             },
             grupoINDE(),
@@ -599,8 +616,6 @@
             }
         ];
 
-        /* Painel de camadas sempre aberto (collapsed: false); quem abre/fecha é o botão abaixo,
-           então ele fica fixado até você clicar de novo no botão ou no ×. */
         var lay = L.control.layers.tree(null, overlaysTree, {
             collapsed: false
         });
@@ -609,7 +624,6 @@
         var painelCamadas = lay.getContainer();
         painelCamadas.classList.add('painel-camadas');
 
-        /* mantém a posição da rolagem quando o wms_inde.js redesenha a árvore */
         var _setOverlayTreeOriginal = lay.setOverlayTree.bind(lay);
         lay.setOverlayTree = function (arvore) {
             var rolagem = painelCamadas.scrollTop;
@@ -655,26 +669,19 @@
         });
         new BotaoCamadas().addTo(map);
 
-        function atualizarVisibilidadeRotulos() {
-            var zoomAtual = map.getZoom();
-            var zoomMinimoParaRotulos = 7;
-            var elementosRotulo = document.querySelectorAll('.rotulo-instituicao');
-
-            elementosRotulo.forEach(function (el) {
-                if (zoomAtual >= zoomMinimoParaRotulos) {
-                    el.style.display = 'block';
-                } else {
-                    el.style.display = 'none';
-                }
-            });
+        /* Gestão da escala dos rótulos por classe CSS no mapa */
+        function verificarEscalaRotulos() {
+            var mapaEl = document.getElementById('map');
+            // Apenas exibe rótulos a partir do zoom 6 (quando o usuário aproxima o mapa)
+            if (map.getZoom() >= 6) {
+                mapaEl.classList.add('exibir-rotulos');
+            } else {
+                mapaEl.classList.remove('exibir-rotulos');
+            }
         }
 
-        map.on("zoomend", atualizarVisibilidadeRotulos);
-        map.on("layeradd", function() {
-            setTimeout(atualizarVisibilidadeRotulos, 50);
-        });
-
-        setTimeout(atualizarVisibilidadeRotulos, 100);
+        map.on("zoomend", verificarEscalaRotulos);
+        verificarEscalaRotulos();
         </script>
     </body>
 </html>
