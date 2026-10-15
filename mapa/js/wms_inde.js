@@ -104,12 +104,53 @@ function abrirCaminho(arvore, alvo) {
     return false;
 }
 
+/* Lista todos os nós da árvore em profundidade (mesma ordem do DOM). */
+function achatarArvore(arvore, saida) {
+    arvore.forEach(function (n) {
+        saida.push(n);
+        if (n.children) achatarArvore(n.children, saida);
+    });
+    return saida;
+}
+
+/* Lê no DOM quais grupos o usuário deixou abertos e grava em n.collapsed,
+   para o redesenho da árvore não fechar os grupos que já estavam abertos.
+   Se a estrutura do DOM não bater com a árvore, não mexe em nada. */
+function guardarEstadoGrupos(painel) {
+    try {
+        var nos = achatarArvore(overlaysTree, []);
+        var els = painel.querySelectorAll('.leaflet-layerstree-node');
+        if (els.length !== nos.length) return;
+        nos.forEach(function (n, i) {
+            if (!n.children) return;
+            var filhos = null;
+            for (var k = 0; k < els[i].children.length; k++) {
+                if (els[i].children[k].classList.contains('leaflet-layerstree-children')) {
+                    filhos = els[i].children[k];
+                    break;
+                }
+            }
+            if (!filhos) return;
+            var fechado = els[i].classList.contains('closed') ||
+                          getComputedStyle(filhos).display === 'none';
+            n.collapsed = fechado;
+        });
+    } catch (e) { /* mantém o comportamento padrão */ }
+}
+
 function atualizarArvore(nodo) {
-    var painel = lay.getContainer();
+    var painel = document.querySelector('#map .leaflet-control-layers') || lay.getContainer();
     var rolagem = painel.scrollTop;
+    guardarEstadoGrupos(painel);
     abrirCaminho(overlaysTree, nodo);
     lay.setOverlayTree(overlaysTree);
-    painel.scrollTop = rolagem;
+
+    /* Reaplica já (antes de pintar) a classe de painel aberto e a rolagem,
+       caso o redesenho tenha recriado o controle. */
+    if (typeof prepararPainel === 'function') prepararPainel();
+    var novo = document.querySelector('#map .leaflet-control-layers') || painel;
+    novo.scrollTop = rolagem;
+    requestAnimationFrame(function () { novo.scrollTop = rolagem; });
 }
 
 function carregarAgenciaWMS(i) {
