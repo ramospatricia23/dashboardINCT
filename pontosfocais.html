@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
     <title>Gerenciador de Dados - INCT Wetscape</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
@@ -153,6 +154,14 @@
                         </div>
                     </div>
 
+                    <hr class="my-4" style="color: #024B30;">
+
+                    <!-- Código de acesso da PU -->
+                    <div class="mb-4">
+                        <label class="form-label">Código de acesso da PU</label>
+                        <input type="password" class="form-control" id="codigo" autocomplete="off" required>
+                    </div>
+
                     <button type="submit" class="btn btn-salvar btn-lg w-100 mt-3" id="btnSalvar">
                         Salvar Alterações na Nuvem
                     </button>
@@ -235,6 +244,7 @@
             const pu = selectPU.value;
             const pacoteDados = {
                 puKey: pu,
+                codigo: document.getElementById('codigo').value.trim(),
                 dados: {
                     brutos: Number(document.getElementById('brutos').value),
                     em_padronizacao: Number(document.getElementById('em_padronizacao').value),
@@ -260,7 +270,7 @@
                     statusCarga.innerText = "🚀 Planilha Atualizada!";
                     alert('Os dados da ' + pu.toUpperCase() + ' foram sincronizados com sucesso e já estão refletidos no Dashboard!');
                     
-                    // Reseta o estado do formulário para nova seleção
+                    // Reseta o estado do formulário (inclusive o código) para nova seleção
                     document.getElementById('formAtualizar').reset();
                     camposFormulario.disabled = true;
                 } else {
